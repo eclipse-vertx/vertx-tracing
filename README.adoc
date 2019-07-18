@@ -1,0 +1,10 @@
+= Tracing for Vert.x 4
+
+image:https://travis-ci.org/eclipse-vertx/vertx-tracing.svg?branch=master["Build Status",link="https://travis-ci.org/eclipse-vertx/vertx-tracing"]
+
+Provides integration with https://github.com/openzipkin/brave[Brave] and https://opentracing.io[OpenTracing]
+
+= Todo
+
+- CQs
+- examples + doc
