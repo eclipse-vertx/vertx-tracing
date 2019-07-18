@@ -1,0 +1,36 @@
+= Vertx Zipkin Tracing
+
+Vert.x integrates with Zipkin thanks to the Zipkin Brave client.
+
+Vert.x uses the ZipKin HTTP sender based using a Vert.x HTTP Client reporting
+spans to `http://localhost:9411/api/v2/spans` in JSON format.
+
+[source,$lang]
+----
+{@link examples.ZipkinTracingExamples#ex1}
+----
+
+You can configure the sender to use a specific URL
+
+[source,$lang]
+----
+{@link examples.ZipkinTracingExamples#ex2}
+----
+
+The default sender uses a single HTTP connection in plain text with compressed bodies.
+
+You can override the configuration of the HTTP sender with custom `HttpClientOptions`.
+
+[source,$lang]
+----
+{@link examples.ZipkinTracingExamples#ex3}
+----
+
+Finally you can set a custom ZipKin `Tracing` allowing for greater control
+over the configuration.
+
+[source,$lang]
+----
+{@link examples.ZipkinTracingExamples#ex4}
+----
+

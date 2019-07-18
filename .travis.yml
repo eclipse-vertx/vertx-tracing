@@ -1,0 +1,25 @@
+language: java
+branches:
+  only:
+  - master
+  - /^\d+\.\d+$/
+jobs:
+  include:
+    - stage: test
+      name: "OracleJDK 8"
+      jdk: oraclejdk8
+      script: mvn -q clean verify -B
+    - if: type != pull_request
+      name: "OpenJDK 11"
+      jdk: openjdk11
+      script: mvn -q clean verify -B
+    - stage: deploy
+      name: "Deploy to Sonatype's snapshots repository"
+      if: type != pull_request AND env(SONATYPE_NEXUS_USERNAME) IS present
+      script: bash .travis.deploy.artifacts.sh
+notifications:
+  email:
+    recipients:
+      - secure: "MhtHrpp/2lPncuUZD6UNniC2S8QEatPkwdGzBRCPqruhRJl3M4gfv+o6YjKZebwtWRgJz9GjRjEmC2CRfK/Wl5UQXZTDGhUZl8MFqdfEYrPEOp80eVrSXHcNnlcz+pCStj18jL9I3Wb2sl96BvI69CGkpI2v29OVEJ84GcM0KJU="
+    on_success: always
+    on_failure: always

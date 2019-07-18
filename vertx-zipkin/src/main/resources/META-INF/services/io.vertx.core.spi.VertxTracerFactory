@@ -1,0 +1,2 @@
+io.vertx.tracing.zipkin.ZipkinTracerFactory
+

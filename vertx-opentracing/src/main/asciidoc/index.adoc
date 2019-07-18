@@ -1,0 +1,19 @@
+= Vertx OpenTracing
+
+Vert.x integrates with OpenTracing thanks to the Jaeger client.
+
+You can configure Vert.x to use the Jaeger client configured via
+https://github.com/jaegertracing/jaeger-client-java/blob/master/jaeger-core/README.md#configuration-via-environment[Environment]
+
+[source,$lang]
+----
+{@link examples.OpenTracingExamples#ex1}
+----
+
+You can also pass a custom `Tracer` allowing for greater control
+over the configuration.
+
+[source,$lang]
+----
+{@link examples.OpenTracingExamples#ex2}
+----
