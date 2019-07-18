@@ -104,7 +104,7 @@ public class OpenTracingTest {
   public void testEventBus(TestContext ctx) throws Exception {
     Async listenLatch = ctx.async(2);
     vertx.createHttpServer().requestHandler(req -> {
-      vertx.eventBus().send("the-address", "ping", ctx.asyncAssertSuccess(resp -> {
+      vertx.eventBus().request("the-address", "ping", ctx.asyncAssertSuccess(resp -> {
         req.response().end();
       }));
     }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.countDown()));

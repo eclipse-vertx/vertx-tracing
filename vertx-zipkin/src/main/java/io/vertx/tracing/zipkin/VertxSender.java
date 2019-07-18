@@ -3,6 +3,7 @@ package io.vertx.tracing.zipkin;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
@@ -83,7 +84,8 @@ public class VertxSender extends Sender {
 
   private class PostCall extends Call<Void> implements Handler<AsyncResult<Callback<Void>>> {
 
-    private final Future<Callback<Void>> fut = Future.<Callback<Void>>future().setHandler(this);
+    private final Promise<Callback<Void>> promise = Promise.promise();
+    private final Future<Callback<Void>> fut = promise.future().setHandler(this);
     private final Buffer body;
 
     PostCall(Buffer body) {
@@ -139,7 +141,7 @@ public class VertxSender extends Sender {
 
     @Override
     public void enqueue(Callback<Void> callback) {
-      if (!fut.tryComplete(callback)) {
+      if (!promise.tryComplete(callback)) {
         throw new IllegalStateException();
       }
     }
