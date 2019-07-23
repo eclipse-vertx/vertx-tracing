@@ -15,6 +15,7 @@ import zipkin2.Span;
 import zipkin2.junit.ZipkinRule;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
@@ -75,17 +76,22 @@ public class ZipkinTest {
     listenLatch.awaitSuccess();
     Async responseLatch = ctx.async();
     HttpClient client = vertx.createHttpClient();
-    client.getNow(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
-      responseLatch.complete();
-    }));
-    responseLatch.awaitSuccess();
-    List<Span> trace = waitUntilTrace(zipkin, 2);
-    assertEquals(2, trace.size());
-    Span span1 = trace.get(0);
-    Span span2 = trace.get(1);
+    try {
+      client.getNow(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
+        responseLatch.complete();
+      }));
+      responseLatch.awaitSuccess();
+      List<Span> trace = waitUntilTrace(zipkin, 2);
+      assertEquals(2, trace.size());
+      Span span1 = trace.get(0);
+      Span span2 = trace.get(1);
 //    assertEquals("get", span.name());
 //    assertEquals("GET", span.tags().get("http.method"));
 //    assertEquals("/", span.tags().get("http.path"));
+      responseLatch.await(10000);
+    } finally {
+      client.close();
+    }
   }
 
   @Test
@@ -96,10 +102,16 @@ public class ZipkinTest {
       c.getNow(8081, "localhost", "/", ctx.asyncAssertSuccess(resp -> {
         req.response().end();
       }));
-    }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
+    }).listen(8080, ar -> {
+      ctx.assertTrue(ar.succeeded(), "Could not bind on port 8080");
+      listenLatch.countDown();
+    });
     vertx.createHttpServer().requestHandler(req -> {
       req.response().end();
-    }).listen(8081, ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
+    }).listen(8081, ar -> {
+      ctx.assertTrue(ar.succeeded(), "Could not bind on port 8081");
+      listenLatch.countDown();
+    });
     listenLatch.awaitSuccess();
     Async responseLatch = ctx.async();
     client.getNow(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
