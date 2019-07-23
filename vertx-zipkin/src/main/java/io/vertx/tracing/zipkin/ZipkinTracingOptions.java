@@ -10,6 +10,8 @@ import io.vertx.core.tracing.TracingOptions;
 import zipkin2.reporter.AsyncReporter;
 import zipkin2.reporter.Sender;
 
+import java.io.IOException;
+
 public class ZipkinTracingOptions extends TracingOptions {
 
   private HttpSenderOptions senderOptions = new HttpSenderOptions();
@@ -51,7 +53,17 @@ public class ZipkinTracingOptions extends TracingOptions {
         .spanReporter(AsyncReporter.builder(sender).build())
         .sampler(Sampler.ALWAYS_SAMPLE)
         .build();
-      return new ZipkinTracer(true, tracing);
+      return new ZipkinTracer(true, tracing) {
+        @Override
+        public void close() {
+          super.close();
+          try {
+            sender.close();
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        }
+      };
     } else {
       return null;
     }

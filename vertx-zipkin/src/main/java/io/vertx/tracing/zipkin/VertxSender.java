@@ -160,4 +160,10 @@ public class VertxSender extends Sender {
       return new PostCall(body);
     }
   }
+
+  @Override
+  public void close() throws IOException {
+    client.close();
+    vertx.close();
+  }
 }

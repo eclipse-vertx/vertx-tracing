@@ -25,15 +25,18 @@ public class ZipkinTest {
   public ZipkinRule zipkin = new ZipkinRule();
 
   private Vertx vertx;
+  private HttpClient client;
 
   @Before
   public void before() {
     String url = zipkin.httpUrl() + "/api/v2/spans";
     vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new ZipkinTracingOptions().setSenderOptions(new HttpSenderOptions().setSenderEndpoint(url)).setEnabled(true)));
+    client = vertx.createHttpClient();
   }
 
   @After
   public void after(TestContext ctx) {
+    client.close();
     vertx.close(ctx.asyncAssertSuccess());
   }
 
@@ -99,7 +102,6 @@ public class ZipkinTest {
     }).listen(8081, ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
     listenLatch.awaitSuccess();
     Async responseLatch = ctx.async();
-    HttpClient client = vertx.createHttpClient();
     client.getNow(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
       responseLatch.complete();
     }));
