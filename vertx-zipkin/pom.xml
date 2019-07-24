@@ -28,22 +28,9 @@
   <name>Vert.x Zipkin</name>
 
   <properties>
-    <stack.version>4.0.0-SNAPSHOT</stack.version>
     <zipkin.version>5.6.0</zipkin.version>
-    <doc.skip>true</doc.skip>
+    <doc.skip>false</doc.skip>
   </properties>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>io.vertx</groupId>
-        <artifactId>vertx-dependencies</artifactId>
-        <version>${stack.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <dependencies>
 
@@ -87,34 +74,5 @@
       <version>${zipkin.version}</version>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
-
-  <build>
-  </build>
-
-  <profiles>
-    <profile>
-      <id>coverage</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <failIfNoTests>false</failIfNoTests>
-              <systemPropertyVariables>
-                <vertx.test.timeout>60</vertx.test.timeout>
-                <io.netty.leakDetectionLevel>PARANOID</io.netty.leakDetectionLevel>
-              </systemPropertyVariables>
-              <argLine>-server -Xms128m -Xmx1024m -XX:NewRatio=2 @{surefireArgLine}</argLine>
-              <excludes>
-                <exclude>**/ScratchPad.java</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>
