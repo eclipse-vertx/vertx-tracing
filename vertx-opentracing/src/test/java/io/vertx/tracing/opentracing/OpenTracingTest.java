@@ -1,16 +1,13 @@
-package io.vertx.tracing;
+package io.vertx.tracing.opentracing;
 
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpClient;
-import io.vertx.core.tracing.TracingOptions;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.tracing.opentracing.OpenTracingOptions;
-import io.vertx.tracing.opentracing.OpenTracingTracer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +39,7 @@ public class OpenTracingTest {
     while (tracer.finishedSpans().size() < expected && (System.currentTimeMillis() - now) < 10000 ) {
       Thread.sleep(10);
     }
-    assertEquals(tracer.finishedSpans().size(), expected);
+    assertEquals(expected, tracer.finishedSpans().size());
     return tracer.finishedSpans();
   }
 
