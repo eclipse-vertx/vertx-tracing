@@ -45,12 +45,6 @@
       <version>${zipkin.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.hsqldb</groupId>
-      <artifactId>hsqldb</artifactId>
-      <version>2.3.4</version>
-    </dependency>
-
-    <dependency>
       <groupId>io.zipkin.zipkin2</groupId>
       <artifactId>zipkin-junit</artifactId>
       <version>2.12.1</version>
