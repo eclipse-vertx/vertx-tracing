@@ -1,14 +1,17 @@
 package io.vertx.tracing.opentracing;
 
+import static io.vertx.tracing.opentracing.OpenTracingContext.ACTIVE_SPAN;
+
 import io.jaegertracing.Configuration;
-import io.opentracing.*;
+import io.opentracing.Span;
+import io.opentracing.SpanContext;
+import io.opentracing.Tracer;
 import io.opentracing.log.Fields;
 import io.opentracing.propagation.Format;
 import io.opentracing.propagation.TextMap;
 import io.opentracing.tag.Tags;
 import io.vertx.core.Context;
 import io.vertx.core.spi.tracing.TagExtractor;
-import io.vertx.tracing.opentracing.VertxContextScopeManager.CapturedContext;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -25,7 +28,7 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
    */
   static Tracer createDefaultTracer() {
     Configuration config = Configuration.fromEnv();
-    return config.getTracerBuilder().withScopeManager(new VertxContextScopeManager()).build();
+    return config.getTracerBuilder().build();
   }
 
   private final boolean closeTracer;
@@ -56,75 +59,69 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
         throw new UnsupportedOperationException();
       }
     });
-    try (CapturedContext ignored = VertxContextScopeManager.withContext(context)) {
-      Tracer.SpanBuilder builder = tracer.buildSpan(operation);
-      if (sc != null) {
-        builder = builder.asChildOf(sc);
-      }
-      Span span = builder
-        .ignoreActiveSpan()
-        .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
-        .withTag(Tags.COMPONENT.getKey(), "vertx").start();
-      tracer.activateSpan(span);
-      reportTags(span, request, tagExtractor);
-      return span;
-    }
+    Span span = tracer.buildSpan(operation)
+      .ignoreActiveSpan()
+      .asChildOf(sc)
+      .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
+      .withTag(Tags.COMPONENT.getKey(), "vertx")
+      .start();
+    reportTags(span, request, tagExtractor);
+    context.putLocal(ACTIVE_SPAN, span);
+    return span;
   }
 
   @Override
-  public <R> void sendResponse(Context context, R response, Span span, Throwable failure,
-    TagExtractor<R> tagExtractor) {
-    try (CapturedContext ignored = VertxContextScopeManager.withContext(context)) {
-      if (span != null) {
-        if (failure != null) {
-          reportFailure(span, failure);
-        }
-        reportTags(span, response, tagExtractor);
-        span.finish();
+  public <R> void sendResponse(
+    Context context, R response, Span span, Throwable failure, TagExtractor<R> tagExtractor) {
+    if (span != null) {
+      context.removeLocal(ACTIVE_SPAN);
+      if (failure != null) {
+        reportFailure(span, failure);
       }
+      reportTags(span, response, tagExtractor);
+      span.finish();
     }
   }
 
   @Override
   public <R> Span sendRequest(Context context, R request, String operation,
     BiConsumer<String, String> headers, TagExtractor<R> tagExtractor) {
-    try (CapturedContext ignored = VertxContextScopeManager.withContext(context)) {
-      Span active = tracer.activeSpan();
-      if (active != null) {
-        Span span = tracer.buildSpan(operation)
-          .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT)
-          .withTag(Tags.COMPONENT.getKey(), "vertx").start();
-        reportTags(span, request, tagExtractor);
-        if (headers != null) {
-          tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new TextMap() {
-            @Override
-            public Iterator<Map.Entry<String, String>> iterator() {
-              throw new UnsupportedOperationException();
-            }
+    Span active = context.getLocal(ACTIVE_SPAN);
+    if (active != null) {
+      Span span = tracer
+        .buildSpan(operation)
+        .asChildOf(active)
+        .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT)
+        .withTag(Tags.COMPONENT.getKey(), "vertx")
+        .start();
+      reportTags(span, request, tagExtractor);
+      if (headers != null) {
+        tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new TextMap() {
+          @Override
+          public Iterator<Map.Entry<String, String>> iterator() {
+            throw new UnsupportedOperationException();
+          }
 
-            @Override
-            public void put(String key, String value) {
-              headers.accept(key, value);
-            }
-          });
-        }
-        return span;
+          @Override
+          public void put(String key, String value) {
+            headers.accept(key, value);
+          }
+        });
       }
-      return null;
+      return span;
     }
+    return null;
   }
 
   @Override
   public <R> void receiveResponse(Context context, R response, Span span, Throwable failure,
     TagExtractor<R> tagExtractor) {
-    try (CapturedContext ignored = VertxContextScopeManager.withContext(context)) {
-      if (span != null) {
-        if (failure != null) {
-          reportFailure(span, failure);
-        }
-        reportTags(span, response, tagExtractor);
-        span.finish();
+    if (span != null) {
+      if (failure != null) {
+        reportFailure(span, failure);
       }
+      reportTags(span, response, tagExtractor);
+      span.finish();
     }
   }
 

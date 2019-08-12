@@ -25,7 +25,7 @@ public class OpenTracingTest {
 
   @Before
   public void before() {
-    tracer = new MockTracer(new VertxContextScopeManager());
+    tracer = new MockTracer();
     vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new OpenTracingOptions(tracer).setEnabled(true)));
   }
 
