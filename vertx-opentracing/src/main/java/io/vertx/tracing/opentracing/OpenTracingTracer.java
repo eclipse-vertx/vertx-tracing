@@ -8,6 +8,7 @@ import io.opentracing.propagation.TextMap;
 import io.opentracing.tag.Tags;
 import io.vertx.core.Context;
 import io.vertx.core.spi.tracing.TagExtractor;
+import io.vertx.tracing.opentracing.VertxContextScopeManager.CapturedContext;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -19,14 +20,12 @@ import java.util.function.BiConsumer;
  */
 public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<Span, Span> {
 
-  private static final String ACTIVE_SCOPE = "vertx.tracing.opentracing.scope";
-
   /**
    * Instantiate an OpenTracing tracer configured from ENV, e.g {@code JAEGER_SERVICE_NAME}, etc...
    */
   static Tracer createDefaultTracer() {
     Configuration config = Configuration.fromEnv();
-    return config.getTracerBuilder().build();
+    return config.getTracerBuilder().withScopeManager(new VertxContextScopeManager()).build();
   }
 
   private final boolean closeTracer;
@@ -57,68 +56,75 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
         throw new UnsupportedOperationException();
       }
     });
-    Tracer.SpanBuilder builder = tracer.buildSpan(operation);
-    if (sc != null) {
-      builder = builder.asChildOf(sc);
+    try (CapturedContext ignored = VertxContextScopeManager.withContext(context)) {
+      Tracer.SpanBuilder builder = tracer.buildSpan(operation);
+      if (sc != null) {
+        builder = builder.asChildOf(sc);
+      }
+      Span span = builder
+        .ignoreActiveSpan()
+        .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
+        .withTag(Tags.COMPONENT.getKey(), "vertx").start();
+      tracer.activateSpan(span);
+      reportTags(span, request, tagExtractor);
+      return span;
     }
-    Span span = builder
-      .ignoreActiveSpan()
-      .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
-      .withTag(Tags.COMPONENT.getKey(), "vertx").start();
-    tracer.activateSpan(span);
-    reportTags(span, request, tagExtractor);
-    return span;
   }
 
   @Override
   public <R> void sendResponse(Context context, R response, Span span, Throwable failure,
     TagExtractor<R> tagExtractor) {
-    if (span != null) {
-      context.removeLocal(ACTIVE_SCOPE);
-      if (failure != null) {
-        reportFailure(span, failure);
+    try (CapturedContext ignored = VertxContextScopeManager.withContext(context)) {
+      if (span != null) {
+        if (failure != null) {
+          reportFailure(span, failure);
+        }
+        reportTags(span, response, tagExtractor);
+        span.finish();
       }
-      reportTags(span, response, tagExtractor);
-      span.finish();
     }
   }
 
   @Override
   public <R> Span sendRequest(Context context, R request, String operation,
     BiConsumer<String, String> headers, TagExtractor<R> tagExtractor) {
-    Span active = tracer.activeSpan();
-    if (active != null) {
-      Span span = tracer.buildSpan(operation)
-        .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT)
-        .withTag(Tags.COMPONENT.getKey(), "vertx").start();
-      reportTags(span, request, tagExtractor);
-      if (headers != null) {
-        tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new TextMap() {
-          @Override
-          public Iterator<Map.Entry<String, String>> iterator() {
-            throw new UnsupportedOperationException();
-          }
+    try (CapturedContext ignored = VertxContextScopeManager.withContext(context)) {
+      Span active = tracer.activeSpan();
+      if (active != null) {
+        Span span = tracer.buildSpan(operation)
+          .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT)
+          .withTag(Tags.COMPONENT.getKey(), "vertx").start();
+        reportTags(span, request, tagExtractor);
+        if (headers != null) {
+          tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new TextMap() {
+            @Override
+            public Iterator<Map.Entry<String, String>> iterator() {
+              throw new UnsupportedOperationException();
+            }
 
-          @Override
-          public void put(String key, String value) {
-            headers.accept(key, value);
-          }
-        });
+            @Override
+            public void put(String key, String value) {
+              headers.accept(key, value);
+            }
+          });
+        }
+        return span;
       }
-      return span;
+      return null;
     }
-    return null;
   }
 
   @Override
   public <R> void receiveResponse(Context context, R response, Span span, Throwable failure,
     TagExtractor<R> tagExtractor) {
-    if (span != null) {
-      if (failure != null) {
-        reportFailure(span, failure);
+    try (CapturedContext ignored = VertxContextScopeManager.withContext(context)) {
+      if (span != null) {
+        if (failure != null) {
+          reportFailure(span, failure);
+        }
+        reportTags(span, response, tagExtractor);
+        span.finish();
       }
-      reportTags(span, response, tagExtractor);
-      span.finish();
     }
   }
 
