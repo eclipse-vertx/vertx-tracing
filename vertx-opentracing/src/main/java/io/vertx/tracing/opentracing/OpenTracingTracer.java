@@ -1,6 +1,6 @@
 package io.vertx.tracing.opentracing;
 
-import static io.vertx.tracing.opentracing.OpenTracingContext.ACTIVE_SPAN;
+import static io.vertx.tracing.opentracing.OpenTracingUtil.ACTIVE_SPAN;
 
 import io.jaegertracing.Configuration;
 import io.opentracing.Span;

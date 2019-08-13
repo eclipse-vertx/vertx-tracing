@@ -8,7 +8,7 @@ import io.vertx.core.Vertx;
  * OpenTracingContext adds helpers for associating and disassociating spans with the current {@link
  * Context}
  */
-public class OpenTracingContext {
+public final class OpenTracingUtil {
 
   static final String ACTIVE_SPAN = "vertx.tracing.opentracing.span";
 
@@ -17,7 +17,7 @@ public class OpenTracingContext {
    *
    * @return a {@link Span} or null
    */
-  public static Span activeSpan() {
+  public static Span getSpan() {
     Context c = Vertx.currentContext();
     return c == null ? null : c.getLocal(ACTIVE_SPAN);
   }
@@ -27,7 +27,7 @@ public class OpenTracingContext {
    *
    * @param span the span to associate with the context.
    */
-  public static void activateSpan(Span span) {
+  public static void setSpan(Span span) {
     if (span != null) {
       Context c = Vertx.currentContext();
       if (c != null) {
@@ -39,7 +39,7 @@ public class OpenTracingContext {
   /**
    * Remove any active span on the context.
    */
-  public static void clearActive() {
+  public static void clearContext() {
     Context c = Vertx.currentContext();
     if (c != null) {
       c.removeLocal(ACTIVE_SPAN);

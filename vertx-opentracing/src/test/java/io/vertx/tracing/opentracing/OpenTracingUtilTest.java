@@ -1,6 +1,6 @@
 package io.vertx.tracing.opentracing;
 
-import static io.vertx.tracing.opentracing.OpenTracingContext.ACTIVE_SPAN;
+import static io.vertx.tracing.opentracing.OpenTracingUtil.ACTIVE_SPAN;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 
@@ -17,7 +17,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(VertxUnitRunner.class)
-public class OpenTracingContextTest {
+public class OpenTracingUtilTest {
 
   private Vertx vertx;
   private MockTracer tracer;
@@ -34,30 +34,30 @@ public class OpenTracingContextTest {
   }
 
   @Test
-  public void activeSpan_should_retrieve_a_span_from_the_currentContext(TestContext ctx) {
+  public void getSpan_should_retrieve_a_span_from_the_currentContext(TestContext ctx) {
     Span span = tracer.buildSpan("test").start();
     vertx.runOnContext(ignored -> {
-      assertNull(OpenTracingContext.activeSpan());
+      assertNull(OpenTracingUtil.getSpan());
       Context context = Vertx.currentContext();
       context.putLocal(ACTIVE_SPAN, span);
 
-      assertSame(span, OpenTracingContext.activeSpan());
+      assertSame(span, OpenTracingUtil.getSpan());
     });
   }
 
   @Test
-  public void activeSpan_should_return_null_when_there_is_no_current_context(TestContext ctx) {
+  public void getSpan_should_return_null_when_there_is_no_current_context(TestContext ctx) {
     Span span = tracer.buildSpan("test").start();
-    OpenTracingContext.activateSpan(span);
-    assertNull(OpenTracingContext.activeSpan());
+    OpenTracingUtil.setSpan(span);
+    assertNull(OpenTracingUtil.getSpan());
   }
 
   @Test
-  public void activateSpan_should_put_the_span_on_the_current_context() {
+  public void setSpan_should_put_the_span_on_the_current_context() {
     Span span = tracer.buildSpan("test").start();
     vertx.runOnContext(ignored -> {
-      assertNull(OpenTracingContext.activeSpan());
-      OpenTracingContext.activateSpan(span);
+      assertNull(OpenTracingUtil.getSpan());
+      OpenTracingUtil.setSpan(span);
 
       Context context = Vertx.currentContext();
       assertSame(span, context.getLocal(ACTIVE_SPAN));
@@ -65,14 +65,14 @@ public class OpenTracingContextTest {
   }
 
   @Test
-  public void clearActive_should_remove_any_span_from_the_context() {
+  public void clearContext_should_remove_any_span_from_the_context() {
     Span span = tracer.buildSpan("test").start();
     vertx.runOnContext(ignored -> {
-      assertNull(OpenTracingContext.activeSpan());
-      OpenTracingContext.activateSpan(span);
+      assertNull(OpenTracingUtil.getSpan());
+      OpenTracingUtil.setSpan(span);
 
-      OpenTracingContext.clearActive();
-      assertNull(OpenTracingContext.activeSpan());
+      OpenTracingUtil.clearContext();
+      assertNull(OpenTracingUtil.getSpan());
     });
   }
 }
