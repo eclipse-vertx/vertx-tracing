@@ -1,17 +1,17 @@
 package io.vertx.tracing.opentracing;
 
+import static io.vertx.tracing.opentracing.OpenTracingUtil.ACTIVE_SPAN;
+
 import io.jaegertracing.Configuration;
-import io.jaegertracing.internal.JaegerTracer;
-import io.opentracing.*;
+import io.opentracing.Span;
+import io.opentracing.SpanContext;
+import io.opentracing.Tracer;
 import io.opentracing.log.Fields;
 import io.opentracing.propagation.Format;
 import io.opentracing.propagation.TextMap;
 import io.opentracing.tag.Tags;
 import io.vertx.core.Context;
 import io.vertx.core.spi.tracing.TagExtractor;
-
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -21,9 +21,7 @@ import java.util.function.BiConsumer;
  * - https://github.com/opentracing/specification/blob/master/semantic_conventions.md
  * - https://github.com/opentracing/specification/blob/master/specification.md
  */
-public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<Scope, Scope> {
-
-  private static final String ACTIVE_SCOPE = "vertx.tracing.opentracing.scope";
+public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<Span, Span> {
 
   /**
    * Instantiate an OpenTracing tracer configured from ENV, e.g {@code JAEGER_SERVICE_NAME}, etc...
@@ -48,37 +46,35 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
   }
 
   @Override
-  public <R> Scope receiveRequest(Context context, R request, String operation, Iterable<Map.Entry<String, String>> headers, TagExtractor<R> tagExtractor) {
+  public <R> Span receiveRequest(Context context, R request, String operation,
+    Iterable<Map.Entry<String, String>> headers, TagExtractor<R> tagExtractor) {
     SpanContext sc = tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMap() {
       @Override
       public Iterator<Map.Entry<String, String>> iterator() {
         return headers.iterator();
       }
+
       @Override
       public void put(String key, String value) {
         throw new UnsupportedOperationException();
       }
     });
-    Tracer.SpanBuilder builder = tracer.buildSpan(operation);
-    if (sc != null) {
-      builder = builder.asChildOf(sc);
-    }
-    builder
+    Span span = tracer.buildSpan(operation)
       .ignoreActiveSpan()
+      .asChildOf(sc)
       .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
-      .withTag(Tags.COMPONENT.getKey(), "vertx");
-    Scope scope = builder.startActive(false);
-    reportTags(scope.span(), request, tagExtractor);
-    scope.close();
-    context.putLocal(ACTIVE_SCOPE, scope);
-    return scope;
+      .withTag(Tags.COMPONENT.getKey(), "vertx")
+      .start();
+    reportTags(span, request, tagExtractor);
+    context.putLocal(ACTIVE_SPAN, span);
+    return span;
   }
 
   @Override
-  public <R> void sendResponse(Context context, R response, Scope scope, Throwable failure, TagExtractor<R> tagExtractor) {
-    if (scope != null) {
-      context.removeLocal(ACTIVE_SCOPE);
-      Span span = scope.span();
+  public <R> void sendResponse(
+    Context context, R response, Span span, Throwable failure, TagExtractor<R> tagExtractor) {
+    if (span != null) {
+      context.removeLocal(ACTIVE_SPAN);
       if (failure != null) {
         reportFailure(span, failure);
       }
@@ -88,37 +84,39 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
   }
 
   @Override
-  public <R> Scope sendRequest(Context context, R request, String operation, BiConsumer<String, String> headers, TagExtractor<R> tagExtractor) {
-    Scope scope = context.getLocal(ACTIVE_SCOPE);
-    if (scope != null) {
-      Tracer.SpanBuilder builder = tracer.buildSpan(operation)
-        .asChildOf(scope.span())
+  public <R> Span sendRequest(Context context, R request, String operation,
+    BiConsumer<String, String> headers, TagExtractor<R> tagExtractor) {
+    Span active = context.getLocal(ACTIVE_SPAN);
+    if (active != null) {
+      Span span = tracer
+        .buildSpan(operation)
+        .asChildOf(active)
         .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT)
-        .withTag(Tags.COMPONENT.getKey(), "vertx");
-      Scope child = builder
-        .startActive(false);
-      reportTags(child.span(), request, tagExtractor);
+        .withTag(Tags.COMPONENT.getKey(), "vertx")
+        .start();
+      reportTags(span, request, tagExtractor);
       if (headers != null) {
-        tracer.inject(child.span().context(), Format.Builtin.HTTP_HEADERS, new TextMap() {
+        tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new TextMap() {
           @Override
           public Iterator<Map.Entry<String, String>> iterator() {
             throw new UnsupportedOperationException();
           }
+
           @Override
           public void put(String key, String value) {
             headers.accept(key, value);
           }
         });
       }
-      return child;
+      return span;
     }
     return null;
   }
 
   @Override
-  public <R> void receiveResponse(Context context, R response, Scope scope, Throwable failure, TagExtractor<R> tagExtractor) {
-    if (scope != null) {
-      Span span = scope.span();
+  public <R> void receiveResponse(Context context, R response, Span span, Throwable failure,
+    TagExtractor<R> tagExtractor) {
+    if (span != null) {
       if (failure != null) {
         reportFailure(span, failure);
       }
@@ -129,7 +127,7 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
 
   private <T> void reportTags(Span span, T obj, TagExtractor<T> tagExtractor) {
     int len = tagExtractor.len(obj);
-    for (int idx = 0;idx < len;idx++) {
+    for (int idx = 0; idx < len; idx++) {
       span.setTag(tagExtractor.name(obj, idx), tagExtractor.value(obj, idx));
     }
   }
@@ -148,13 +146,8 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
 
   @Override
   public void close() {
-    if (closeTracer) {
-      if (tracer instanceof Closeable) {
-        try {
-          ((Closeable) tracer).close();
-        } catch (IOException ignore) {
-        }
-      }
+    if (closeTracer && tracer != null) {
+      tracer.close();
     }
   }
 }
