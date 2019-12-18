@@ -23,9 +23,9 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
 
   // docker run --rm -ti -p 9411:9411 openzipkin/zipkin
 
-  private static final String ACTIVE_SPAN = "vertx.tracing.zipkin.active_span";
-  private static final String ACTIVE_CONTEXT = "vertx.tracing.zipkin.active_context";
-  private static final String ACTIVE_REQUEST = "vertx.tracing.zipkin.active_request";
+  public static final String ACTIVE_SPAN = "vertx.tracing.zipkin.active_span";
+  public static final String ACTIVE_CONTEXT = "vertx.tracing.zipkin.active_context";
+  public static final String ACTIVE_REQUEST = "vertx.tracing.zipkin.active_request";
 
   static final HttpServerAdapter<HttpServerRequest, HttpServerRequest> HTTP_SERVER_ADAPTER =
     new HttpServerAdapter<HttpServerRequest, HttpServerRequest>() {

@@ -90,19 +90,14 @@ public class ZipkinHttpClientITTest extends ITHttpAsyncClient<HttpClient> {
         client.post(pathIncludingQuery, handler).end(body);
       }
     };
-    TraceContext ctx = currentTraceContext.get();
-    if (ctx != null) {
-      Context foobar = vertx.getOrCreateContext();
-      foobar.putLocal(ZipkinTracer.ACTIVE_CONTEXT, ctx);
-      foobar.runOnContext(v -> {
-        //CurrentTraceContext.Scope scope = currentTraceContext.newScope(ctx);
+    TraceContext traceCtx = currentTraceContext.get();
+    if (traceCtx != null) {
+      // Create a context and associate it with the trace context
+      Context ctx = vertx.getOrCreateContext();
+      ctx.putLocal(ZipkinTracer.ACTIVE_CONTEXT, traceCtx);
+      ctx.runOnContext(v -> {
+        // Run task on this context so the tracer will resolve it from the local storage
         task.run();
-/*
-        fut.whenComplete((a, b) -> {
-          scope.close();
-        });
-*/
-
       });
     } else {
       task.run();
