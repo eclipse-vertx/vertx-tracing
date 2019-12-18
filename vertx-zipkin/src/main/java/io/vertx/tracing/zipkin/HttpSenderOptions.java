@@ -269,13 +269,13 @@ public class HttpSenderOptions extends HttpClientOptions {
   }
 
   @Override
-  public HttpSenderOptions setMaxWebsocketFrameSize(int maxWebsocketFrameSize) {
-    return (HttpSenderOptions)super.setMaxWebsocketFrameSize(maxWebsocketFrameSize);
+  public HttpSenderOptions setMaxWebSocketFrameSize(int maxWebsocketFrameSize) {
+    return (HttpSenderOptions)super.setMaxWebSocketFrameSize(maxWebsocketFrameSize);
   }
 
   @Override
-  public HttpSenderOptions setMaxWebsocketMessageSize(int maxWebsocketMessageSize) {
-    return (HttpSenderOptions)super.setMaxWebsocketMessageSize(maxWebsocketMessageSize);
+  public HttpSenderOptions setMaxWebSocketMessageSize(int maxWebsocketMessageSize) {
+    return (HttpSenderOptions)super.setMaxWebSocketMessageSize(maxWebsocketMessageSize);
   }
 
   @Override
@@ -379,28 +379,28 @@ public class HttpSenderOptions extends HttpClientOptions {
   }
 
   @Override
-  public HttpSenderOptions setTryUsePerFrameWebsocketCompression(boolean offer) {
-    return (HttpSenderOptions)super.setTryUsePerFrameWebsocketCompression(offer);
+  public HttpSenderOptions setTryUsePerFrameWebSocketCompression(boolean offer) {
+    return (HttpSenderOptions)super.setTryUsePerFrameWebSocketCompression(offer);
   }
 
   @Override
-  public HttpSenderOptions setTryUsePerMessageWebsocketCompression(boolean offer) {
-    return (HttpSenderOptions)super.setTryUsePerMessageWebsocketCompression(offer);
+  public HttpSenderOptions setTryUsePerMessageWebSocketCompression(boolean offer) {
+    return (HttpSenderOptions)super.setTryUsePerMessageWebSocketCompression(offer);
   }
 
   @Override
-  public HttpSenderOptions setWebsocketCompressionLevel(int compressionLevel) {
-    return (HttpSenderOptions)super.setWebsocketCompressionLevel(compressionLevel);
+  public HttpSenderOptions setWebSocketCompressionLevel(int compressionLevel) {
+    return (HttpSenderOptions)super.setWebSocketCompressionLevel(compressionLevel);
   }
 
   @Override
-  public HttpSenderOptions setWebsocketCompressionAllowClientNoContext(boolean offer) {
-    return (HttpSenderOptions)super.setWebsocketCompressionAllowClientNoContext(offer);
+  public HttpSenderOptions setWebSocketCompressionAllowClientNoContext(boolean offer) {
+    return (HttpSenderOptions)super.setWebSocketCompressionAllowClientNoContext(offer);
   }
 
   @Override
-  public HttpSenderOptions setWebsocketCompressionRequestServerNoContext(boolean offer) {
-    return (HttpSenderOptions)super.setWebsocketCompressionRequestServerNoContext(offer);
+  public HttpSenderOptions setWebSocketCompressionRequestServerNoContext(boolean offer) {
+    return (HttpSenderOptions)super.setWebSocketCompressionRequestServerNoContext(offer);
   }
 
   @Override
