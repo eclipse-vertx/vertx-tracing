@@ -40,8 +40,6 @@
 |[[maxWaitQueueSize]]`@maxWaitQueueSize`|`Number (int)`|-
 |[[maxWebSocketFrameSize]]`@maxWebSocketFrameSize`|`Number (int)`|-
 |[[maxWebSocketMessageSize]]`@maxWebSocketMessageSize`|`Number (int)`|-
-|[[maxWebsocketFrameSize]]`@maxWebsocketFrameSize`|`Number (int)`|-
-|[[maxWebsocketMessageSize]]`@maxWebsocketMessageSize`|`Number (int)`|-
 |[[metricsName]]`@metricsName`|`String`|-
 |[[openSslEngineOptions]]`@openSslEngineOptions`|`link:dataobjects.html#OpenSSLEngineOptions[OpenSSLEngineOptions]`|-
 |[[pemKeyCertOptions]]`@pemKeyCertOptions`|`link:dataobjects.html#PemKeyCertOptions[PemKeyCertOptions]`|-
@@ -75,17 +73,12 @@
 |[[trustStoreOptions]]`@trustStoreOptions`|`link:dataobjects.html#JksOptions[JksOptions]`|-
 |[[tryUseCompression]]`@tryUseCompression`|`Boolean`|-
 |[[tryUsePerFrameWebSocketCompression]]`@tryUsePerFrameWebSocketCompression`|`Boolean`|-
-|[[tryUsePerFrameWebsocketCompression]]`@tryUsePerFrameWebsocketCompression`|`Boolean`|-
 |[[tryUsePerMessageWebSocketCompression]]`@tryUsePerMessageWebSocketCompression`|`Boolean`|-
-|[[tryUsePerMessageWebsocketCompression]]`@tryUsePerMessageWebsocketCompression`|`Boolean`|-
 |[[tryWebSocketDeflateFrameCompression]]`@tryWebSocketDeflateFrameCompression`|`Boolean`|-
 |[[useAlpn]]`@useAlpn`|`Boolean`|-
 |[[verifyHost]]`@verifyHost`|`Boolean`|-
 |[[webSocketCompressionAllowClientNoContext]]`@webSocketCompressionAllowClientNoContext`|`Boolean`|-
 |[[webSocketCompressionLevel]]`@webSocketCompressionLevel`|`Number (int)`|-
 |[[webSocketCompressionRequestServerNoContext]]`@webSocketCompressionRequestServerNoContext`|`Boolean`|-
-|[[websocketCompressionAllowClientNoContext]]`@websocketCompressionAllowClientNoContext`|`Boolean`|-
-|[[websocketCompressionLevel]]`@websocketCompressionLevel`|`Number (int)`|-
-|[[websocketCompressionRequestServerNoContext]]`@websocketCompressionRequestServerNoContext`|`Boolean`|-
 |===
 

@@ -3,13 +3,13 @@ package io.vertx.tracing.zipkin;
 import brave.propagation.ExtraFieldPropagation;
 import brave.propagation.TraceContext;
 import brave.test.http.ITHttpServer;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.tracing.TracingOptions;
 import org.junit.After;
 
 import java.util.concurrent.CompletableFuture;
@@ -44,7 +44,7 @@ public class ZipkinHttpServerITTest extends ITHttpServer implements Handler<Http
 
   @Override
   public void handle(HttpServerRequest req) {
-    TraceContext ctx = ZipkinTracer.DEFAULT_CURRENT_TRACE_CONTEXT.get();
+    TraceContext ctx = ZipkinTracer.activeContext();
     switch (req.path()) {
       case "/extra":
         req.response().end(ExtraFieldPropagation.get(ctx, EXTRA_KEY));
@@ -69,7 +69,7 @@ public class ZipkinHttpServerITTest extends ITHttpServer implements Handler<Http
         }
         break;
       case "/async":
-        if (ZipkinTracer.currentSpan() == null) {
+        if (ZipkinTracer.activeSpan() == null) {
           throw new IllegalStateException("couldn't read current span!");
         }
         req.endHandler(v -> req.response().end("bar"));

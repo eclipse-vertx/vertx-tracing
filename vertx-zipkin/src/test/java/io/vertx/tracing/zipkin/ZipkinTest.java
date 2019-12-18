@@ -118,15 +118,15 @@ public class ZipkinTest {
       responseLatch.complete();
     }));
     responseLatch.awaitSuccess();
-    List<Span> trace = waitUntilTrace(2);
-    assertEquals(2, trace.size());
+    List<Span> trace = waitUntilTrace(4);
+    assertEquals(4, trace.size());
     Span span1 = trace.get(0);
-//    assertEquals("get /", span1.name());
-//    assertEquals("GET", span1.tags().get("http.method"));
-//    assertEquals("/", span1.tags().get("http.path"));
+    assertEquals("get /", span1.name());
+    assertEquals("GET", span1.tags().get("http.method"));
+    assertEquals("/", span1.tags().get("http.path"));
     Span span2 = trace.get(1);
-//    assertEquals("get", span2.name());
-//    assertEquals("GET", span2.tags().get("http.method"));
-//    assertEquals("/", span2.tags().get("http.path"));
+    assertEquals("get", span2.name());
+    assertEquals("GET", span2.tags().get("http.method"));
+    assertEquals("/", span2.tags().get("http.path"));
   }
 }
