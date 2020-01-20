@@ -91,7 +91,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       @Override
       public String method(HttpClientRequest request) {
         HttpMethod method = request.method();
-        return method == HttpMethod.OTHER ? request.getRawMethod() : method.name();
+        return method.name();
       }
 
       @Override
