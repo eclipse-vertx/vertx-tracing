@@ -57,7 +57,7 @@ public class OpenTracingTest {
     listenLatch.awaitSuccess();
     Async responseLatch = ctx.async();
     HttpClient client = vertx.createHttpClient();
-    client.getNow(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
+    client.get(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
       responseLatch.complete();
     }));
     responseLatch.awaitSuccess();
@@ -74,7 +74,7 @@ public class OpenTracingTest {
     Async listenLatch = ctx.async(2);
     HttpClient c = vertx.createHttpClient();
     vertx.createHttpServer().requestHandler(req -> {
-      c.getNow(8081, "localhost", "/", ctx.asyncAssertSuccess(resp -> {
+      c.get(8081, "localhost", "/", ctx.asyncAssertSuccess(resp -> {
         req.response().end();
       }));
     }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
@@ -84,7 +84,7 @@ public class OpenTracingTest {
     listenLatch.awaitSuccess();
     Async responseLatch = ctx.async();
     HttpClient client = vertx.createHttpClient();
-    client.getNow(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
+    client.get(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
       responseLatch.complete();
     }));
     responseLatch.awaitSuccess();
@@ -114,7 +114,7 @@ public class OpenTracingTest {
     listenLatch.awaitSuccess();
     Async responseLatch = ctx.async();
     HttpClient client = vertx.createHttpClient();
-    client.getNow(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
+    client.get(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
       responseLatch.complete();
     }));
     responseLatch.awaitSuccess();

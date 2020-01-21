@@ -77,7 +77,7 @@ public class ZipkinTest {
     Async responseLatch = ctx.async();
     HttpClient client = vertx.createHttpClient();
     try {
-      client.getNow(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
+      client.get(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
         responseLatch.complete();
       }));
       responseLatch.awaitSuccess();
@@ -99,7 +99,7 @@ public class ZipkinTest {
     Async listenLatch = ctx.async(2);
     HttpClient c = vertx.createHttpClient();
     vertx.createHttpServer().requestHandler(req -> {
-      c.getNow(8081, "localhost", "/", ctx.asyncAssertSuccess(resp -> {
+      c.get(8081, "localhost", "/", ctx.asyncAssertSuccess(resp -> {
         req.response().end();
       }));
     }).listen(8080, ar -> {
@@ -114,7 +114,7 @@ public class ZipkinTest {
     });
     listenLatch.awaitSuccess();
     Async responseLatch = ctx.async();
-    client.getNow(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
+    client.get(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
       responseLatch.complete();
     }));
     responseLatch.awaitSuccess();

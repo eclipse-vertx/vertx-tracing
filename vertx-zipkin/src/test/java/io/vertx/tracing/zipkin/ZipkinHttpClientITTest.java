@@ -11,9 +11,11 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientResponse;
+import io.vertx.core.http.RequestOptions;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -85,9 +87,9 @@ public class ZipkinHttpClientITTest extends ITHttpAsyncClient<HttpClient> {
         }
       };
       if (body == null) {
-        client.get(pathIncludingQuery, handler).setFollowRedirects(true).end();
+        client.get(new RequestOptions().setURI(pathIncludingQuery).setFollowRedirects(true), handler);
       } else {
-        client.post(pathIncludingQuery, handler).end(body);
+        client.post(pathIncludingQuery, Buffer.buffer(body), handler);
       }
     };
     TraceContext traceCtx = currentTraceContext.get();
