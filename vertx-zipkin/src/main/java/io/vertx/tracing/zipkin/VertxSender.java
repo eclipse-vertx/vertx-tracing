@@ -86,7 +86,7 @@ public class VertxSender extends Sender {
   private class PostCall extends Call<Void> implements Handler<AsyncResult<Callback<Void>>> {
 
     private final Promise<Callback<Void>> promise = Promise.promise();
-    private final Future<Callback<Void>> fut = promise.future().setHandler(this);
+    private final Future<Callback<Void>> fut = promise.future().onComplete(this);
     private final Buffer body;
 
     PostCall(Buffer body) {
