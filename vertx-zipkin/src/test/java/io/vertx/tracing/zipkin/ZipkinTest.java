@@ -125,7 +125,7 @@ public class ZipkinTest {
     assertEquals("GET", span1.tags().get("http.method"));
     assertEquals("/", span1.tags().get("http.path"));
     Span span2 = trace.get(1);
-    assertEquals("get", span2.name());
+    assertEquals("get /", span2.name());
     assertEquals("GET", span2.tags().get("http.method"));
     assertEquals("/", span2.tags().get("http.path"));
   }
