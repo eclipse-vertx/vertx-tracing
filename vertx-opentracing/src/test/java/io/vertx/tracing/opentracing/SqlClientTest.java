@@ -83,7 +83,7 @@ public class SqlClientTest {
   }
 
   @Test
-  public void testBilto(TestContext ctx) throws Exception {
+  public void testPreparedQuery(TestContext ctx) throws Exception {
     Async listenLatch = ctx.async();
     vertx.createHttpServer().requestHandler(req -> {
       pool.preparedQuery("SELECT $1 \"VAL\"")
