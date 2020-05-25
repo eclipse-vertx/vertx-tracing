@@ -13,7 +13,6 @@ public class OpenTracingExamples {
     Vertx vertx = Vertx.vertx(new VertxOptions()
       .setTracingOptions(
         new OpenTracingOptions()
-          .setEnabled(true)
       )
     );
   }
@@ -22,7 +21,6 @@ public class OpenTracingExamples {
     Vertx vertx = Vertx.vertx(new VertxOptions()
       .setTracingOptions(
         new OpenTracingOptions(tracer)
-          .setEnabled(true)
       )
     );
   }

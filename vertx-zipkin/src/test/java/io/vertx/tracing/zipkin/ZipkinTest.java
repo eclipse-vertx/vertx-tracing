@@ -15,7 +15,6 @@ import zipkin2.Span;
 import zipkin2.junit.ZipkinRule;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
@@ -31,7 +30,7 @@ public class ZipkinTest {
   @Before
   public void before() {
     String url = zipkin.httpUrl() + "/api/v2/spans";
-    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new ZipkinTracingOptions().setSenderOptions(new HttpSenderOptions().setSenderEndpoint(url)).setEnabled(true)));
+    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new ZipkinTracingOptions().setSenderOptions(new HttpSenderOptions().setSenderEndpoint(url))));
     client = vertx.createHttpClient();
   }
 

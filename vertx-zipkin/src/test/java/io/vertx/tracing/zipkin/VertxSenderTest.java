@@ -17,7 +17,7 @@ public class VertxSenderTest {
 
   @Before
   public void before() {
-    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new ZipkinTracingOptions().setEnabled(true)));
+    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new ZipkinTracingOptions()));
   }
 
   @After

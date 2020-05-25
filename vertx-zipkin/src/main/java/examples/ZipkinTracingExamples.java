@@ -15,7 +15,7 @@ public class ZipkinTracingExamples {
   public void ex1() {
     Vertx vertx = Vertx.vertx(new VertxOptions()
       .setTracingOptions(
-        new ZipkinTracingOptions().setEnabled(true)
+        new ZipkinTracingOptions()
       )
     );
   }
@@ -25,7 +25,6 @@ public class ZipkinTracingExamples {
       .setTracingOptions(
         new ZipkinTracingOptions()
           .setSenderOptions(new HttpSenderOptions().setSenderEndpoint(senderEndpoint))
-          .setEnabled(true)
       )
     );
   }
@@ -38,7 +37,6 @@ public class ZipkinTracingExamples {
             .setSenderEndpoint(senderEndpoint)
             .setSsl(true)
             .setKeyCertOptions(sslOptions))
-          .setEnabled(true)
       )
     );
   }
@@ -47,7 +45,6 @@ public class ZipkinTracingExamples {
     Vertx vertx = Vertx.vertx(new VertxOptions()
       .setTracingOptions(
         new ZipkinTracingOptions(tracing)
-          .setEnabled(true)
       )
     );
   }
