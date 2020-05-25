@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Options for reporting to a Zipkin server configured by default to {@code http://localhost:9411/api/v2/spans}.
+ */
 @DataObject
 public class HttpSenderOptions extends HttpClientOptions {
 

@@ -15,7 +15,7 @@ public class ZipkinTracingExamples {
   public void ex1() {
     Vertx vertx = Vertx.vertx(new VertxOptions()
       .setTracingOptions(
-        new ZipkinTracingOptions()
+        new ZipkinTracingOptions().setServiceName("A cute service")
       )
     );
   }

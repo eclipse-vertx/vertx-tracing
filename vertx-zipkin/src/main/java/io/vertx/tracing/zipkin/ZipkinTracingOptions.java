@@ -11,9 +11,15 @@ import zipkin2.reporter.AsyncReporter;
 import zipkin2.reporter.Sender;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class ZipkinTracingOptions extends TracingOptions {
 
+  public static final String DEFAULT_SERVICE_NAME = "a-service";
+  public static final boolean DEFAULT_SUPPORTS_JOIN = true;
+
+  private String serviceName = DEFAULT_SERVICE_NAME;
+  private boolean supportsJoin = DEFAULT_SUPPORTS_JOIN;
   private HttpSenderOptions senderOptions = new HttpSenderOptions();
   private HttpTracing httpTracing;
 
@@ -32,24 +38,74 @@ public class ZipkinTracingOptions extends TracingOptions {
     super(json);
   }
 
+  /**
+   * @return the service name
+   */
+  public String getServiceName() {
+    return serviceName;
+  }
 
+  /**
+   * Set the service name to use.
+   *
+   * @param serviceName the service name
+   * @return this instance
+   */
+  public ZipkinTracingOptions setServiceName(String serviceName) {
+    Objects.requireNonNull(serviceName, "Service name cannot be null");
+    this.serviceName = serviceName;
+    return this;
+  }
+
+  /**
+   * @return {@link brave.Tracing.Builder#supportsJoin(boolean)} option value
+   */
+  public boolean isSupportsJoin() {
+    return supportsJoin;
+  }
+
+  /**
+   * Configures {@link brave.Tracing.Builder#supportsJoin(boolean)} option.
+   *
+   * @param supportsJoin the config value
+   * @return this instance
+   */
+  public ZipkinTracingOptions setSupportsJoin(boolean supportsJoin) {
+    this.supportsJoin = supportsJoin;
+    return this;
+  }
+
+  /**
+   * @return the sender options
+   */
   public HttpClientOptions getSenderOptions() {
     return senderOptions;
   }
 
+  /**
+   * Set the HTTP sender options to use for reporting spans.
+   *
+   * @param senderOptions the options
+   * @return this instance
+   */
   public ZipkinTracingOptions setSenderOptions(HttpSenderOptions senderOptions) {
     this.senderOptions = senderOptions;
     return this;
   }
 
-  VertxTracer<?, ?> buildTracer() {
+  /**
+   * Build the tracer and return it.
+   */
+  public VertxTracer<?, ?> buildTracer() {
     if (httpTracing != null) {
       return new ZipkinTracer(false, httpTracing);
     } else if (senderOptions != null) {
+      String localServiceName = serviceName;
       Sender sender = new VertxSender(senderOptions);
       Tracing tracing = Tracing
         .newBuilder()
-        .localServiceName("the_service")
+        .supportsJoin(supportsJoin)
+        .localServiceName(localServiceName)
         .spanReporter(AsyncReporter.builder(sender).build())
         .sampler(Sampler.ALWAYS_SAMPLE)
         .build();

@@ -56,12 +56,8 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
 
       @Override
       public String route(HttpServerRequest request) {
-        int sc = request.response().getStatusCode();
-        if (sc == 404 || sc / 100 == 3) {
-          return "";
-        } else {
-          return request.path();
-        }
+        // Not implemented
+        return "";
       }
 
       @Override
@@ -70,16 +66,8 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
           return true;
         }
         SocketAddress addr = request.remoteAddress();
-        return span.remoteIpAndPort(addr.host(), addr.port());
-      }
-
-      @Override
-      public boolean parseClientAddress(HttpServerRequest req, Endpoint.Builder builder) {
-        if (super.parseClientAddress(req, builder)) return true;
-        SocketAddress addr = req.remoteAddress();
-        if (builder.parseIp(addr.host())) {
-          builder.port(addr.port());
-          return true;
+        if (addr != null && addr.hostAddress() != null) {
+          return span.remoteIpAndPort(addr.hostAddress(), addr.port());
         }
         return false;
       }
@@ -108,8 +96,6 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       public Integer statusCode(HttpClientResponse response) {
         return response.statusCode();
       }
-
-
     };
 
   private static final Propagation.Getter<HttpServerRequest, String> GETTER = new Propagation.Getter<HttpServerRequest, String>() {
@@ -202,6 +188,10 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       } else {
         span = tracing.tracer().newChild(o);
       }
+      SocketAddress socketAddress = httpReq.connection().remoteAddress();
+      if (socketAddress != null && socketAddress.hostAddress() != null) {
+        span.remoteIpAndPort(socketAddress.hostAddress(), socketAddress.port());
+      }
       clientHandler.handleSend(tracing.propagation().injector(new Propagation.Setter<HttpClientRequest, String>() {
         @Override
         public void put(HttpClientRequest carrier, String key, String value) {
@@ -212,10 +202,6 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
           return "HttpClientRequest::putHeader";
         }
       }), httpReq, span);
-      SocketAddress socketAddress = httpReq.connection().remoteAddress();
-      if (socketAddress != null) {
-        span.remoteIpAndPort(socketAddress.host(), socketAddress.port());
-      }
       return (resp, err) -> {
         clientHandler.handleReceive((HttpClientResponse) resp, err, span);
       };

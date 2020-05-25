@@ -10,6 +10,8 @@ spans to `http://localhost:9411/api/v2/spans` in JSON format.
 {@link examples.ZipkinTracingExamples#ex1}
 ----
 
+The service name is the mandatory Zipkin service name. If you don't set it, then `a-service` will be used instead.
+
 You can configure the sender to use a specific URL
 
 [source,$lang]

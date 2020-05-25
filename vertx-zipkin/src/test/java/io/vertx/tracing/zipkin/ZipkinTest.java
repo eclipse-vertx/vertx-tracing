@@ -3,6 +3,7 @@ package io.vertx.tracing.zipkin;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpServer;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -11,9 +12,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import zipkin2.Endpoint;
 import zipkin2.Span;
 import zipkin2.junit.ZipkinRule;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -30,7 +34,12 @@ public class ZipkinTest {
   @Before
   public void before() {
     String url = zipkin.httpUrl() + "/api/v2/spans";
-    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new ZipkinTracingOptions().setSenderOptions(new HttpSenderOptions().setSenderEndpoint(url))));
+    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(
+      new ZipkinTracingOptions()
+        .setServiceName("my-service-name")
+        .setSupportsJoin(false)
+        .setSenderOptions(new HttpSenderOptions().setSenderEndpoint(url))
+    ));
     client = vertx.createHttpClient();
   }
 
@@ -55,12 +64,30 @@ public class ZipkinTest {
     }
     throw new AssertionError();
   }
-/*
-  void assertSingleSpan(List<MockSpan> spans) {
-    long result = spans.stream().map(span -> span.context().traceId()).distinct().count();
+
+  List<Span> assertSingleSpan(List<Span> spans) {
+    long result = spans.stream().map(Span::traceId).distinct().count();
     assertEquals(1, result);
+
+    // Find top
+    spans = new ArrayList<>(spans);
+    Span top = spans.stream().filter(span -> span.id().equals(span.traceId())).findFirst().get();
+    spans.remove(top);
+    LinkedList<Span> sorted = foo(top, spans);
+    sorted.addFirst(top);
+    return sorted;
   }
-*/
+
+  private LinkedList<Span> foo(Span top, List<Span> others) {
+    if (others.isEmpty()) {
+      return new LinkedList<>();
+    }
+    Span s = others.stream().filter(span -> span.parentId().equals(top.id())).findFirst().get();
+    others.remove(s);
+    LinkedList<Span> ret = foo(s, others);
+    ret.addFirst(s);
+    return ret;
+  }
 
   @Test
   public void testHttpServerRequest(TestContext ctx) throws Exception {
@@ -97,7 +124,7 @@ public class ZipkinTest {
   public void testHttpClientRequest(TestContext ctx) throws Exception {
     Async listenLatch = ctx.async(2);
     HttpClient c = vertx.createHttpClient();
-    vertx.createHttpServer().requestHandler(req -> {
+    HttpServer server = vertx.createHttpServer().requestHandler(req -> {
       c.get(8081, "localhost", "/", ctx.asyncAssertSuccess(resp -> {
         req.response().end();
       }));
@@ -117,15 +144,30 @@ public class ZipkinTest {
       responseLatch.complete();
     }));
     responseLatch.awaitSuccess();
-    List<Span> trace = waitUntilTrace(4);
+    List<Span> trace = assertSingleSpan(waitUntilTrace(4));
     assertEquals(4, trace.size());
     Span span1 = trace.get(0);
-    assertEquals("get /", span1.name());
+    assertEquals(Span.Kind.CLIENT, span1.kind());
+    assertEquals("my-service-name", span1.localServiceName());
+    assertEquals("get", span1.name());
     assertEquals("GET", span1.tags().get("http.method"));
     assertEquals("/", span1.tags().get("http.path"));
+    assertEquals(8080, span1.remoteEndpoint().portAsInt());
     Span span2 = trace.get(1);
-    assertEquals("get /", span2.name());
+    assertEquals(Span.Kind.SERVER, span2.kind());
+    assertEquals("get", span2.name());
     assertEquals("GET", span2.tags().get("http.method"));
     assertEquals("/", span2.tags().get("http.path"));
+    Span span3 = trace.get(2);
+    assertEquals(Span.Kind.CLIENT, span3.kind());
+    assertEquals("get", span3.name());
+    assertEquals("GET", span3.tags().get("http.method"));
+    assertEquals("/", span3.tags().get("http.path"));
+    assertEquals(8081, span3.remoteEndpoint().portAsInt());
+    Span span4 = trace.get(3);
+    assertEquals(Span.Kind.SERVER, span4.kind());
+    assertEquals("get", span4.name());
+    assertEquals("GET", span4.tags().get("http.method"));
+    assertEquals("/", span4.tags().get("http.path"));
   }
 }
