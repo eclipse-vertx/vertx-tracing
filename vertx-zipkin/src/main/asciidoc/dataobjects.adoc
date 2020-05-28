@@ -3,6 +3,10 @@
 [[HttpSenderOptions]]
 == HttpSenderOptions
 
+++++
+ Options for reporting to a Zipkin server configured by default to <code>http://localhost:9411/api/v2/spans</code>.
+++++
+'''
 
 [cols=">25%,25%,50%"]
 [frame="topbot"]
