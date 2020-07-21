@@ -109,12 +109,12 @@ public class SqlClientTest {
     }));
     responseLatch.awaitSuccess();
     List<MockSpan> spans = waitUntil(2);
-    MockSpan requestSpan = spans.get(1);
+    MockSpan requestSpan = spans.get(0);
     assertEquals("GET", requestSpan.operationName());
     assertEquals("GET", requestSpan.tags().get("http.method"));
     assertEquals("http://localhost:8080/", requestSpan.tags().get("http.url"));
     assertEquals("200", requestSpan.tags().get("http.status_code"));
-    MockSpan querySpan = spans.get(0);
+    MockSpan querySpan = spans.get(1);
     assertEquals("Query", querySpan.operationName());
     assertEquals("client", querySpan.tags().get("span.kind"));
     assertEquals("SELECT $1 \"VAL\"", querySpan.tags().get("db.statement"));

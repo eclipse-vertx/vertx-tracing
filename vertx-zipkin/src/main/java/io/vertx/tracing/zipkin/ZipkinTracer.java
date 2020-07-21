@@ -9,8 +9,10 @@ import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.*;
 import io.vertx.core.net.SocketAddress;
+import io.vertx.core.spi.metrics.HttpClientMetrics;
+import io.vertx.core.spi.observability.HttpRequest;
+import io.vertx.core.spi.observability.HttpResponse;
 import io.vertx.core.spi.tracing.TagExtractor;
-import zipkin2.Endpoint;
 
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -73,27 +75,27 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       }
     };
 
-  static final HttpClientAdapter<HttpClientRequest, HttpClientResponse> HTTP_CLIENT_ADAPTER =
-    new HttpClientAdapter<HttpClientRequest, HttpClientResponse>() {
+  static final HttpClientAdapter<HttpRequest, HttpResponse> HTTP_CLIENT_ADAPTER =
+    new HttpClientAdapter<HttpRequest, HttpResponse>() {
 
       @Override
-      public String method(HttpClientRequest request) {
+      public String method(HttpRequest request) {
         HttpMethod method = request.method();
         return method.name();
       }
 
       @Override
-      public String url(HttpClientRequest request) {
+      public String url(HttpRequest request) {
         return request.absoluteURI();
       }
 
       @Override
-      public String requestHeader(HttpClientRequest request, String name) {
+      public String requestHeader(HttpRequest request, String name) {
         return request.headers().get(name);
       }
 
       @Override
-      public Integer statusCode(HttpClientResponse response) {
+      public Integer statusCode(HttpResponse response) {
         return response.statusCode();
       }
     };
@@ -136,7 +138,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
   private final Tracing tracing;
   private final boolean closeTracer;
   private final HttpServerHandler<HttpServerRequest, HttpServerRequest> httpServerHandler;
-  private final HttpClientHandler<HttpClientRequest, HttpClientResponse> clientHandler;
+  private final HttpClientHandler<HttpRequest, HttpResponse> clientHandler;
 
   public ZipkinTracer(boolean closeTracer, Tracing tracing) {
     this(closeTracer, HttpTracing.newBuilder(tracing).build());
@@ -180,30 +182,32 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
   @Override
   public <R> BiConsumer<Object, Throwable> sendRequest(Context context, R request, String operation, BiConsumer<String, String> headers, TagExtractor<R> tagExtractor) {
     TraceContext o = context.getLocal(ACTIVE_CONTEXT);
-    if (request instanceof HttpClientRequest) {
-      HttpClientRequest httpReq = (HttpClientRequest) request;
+    if (request instanceof HttpRequest) {
+      HttpRequest httpRequest = (HttpRequest) request;
       Span span;
       if (o == null) {
         span = tracing.tracer().newTrace();
       } else {
         span = tracing.tracer().newChild(o);
       }
-      SocketAddress socketAddress = httpReq.connection().remoteAddress();
+      SocketAddress socketAddress = httpRequest.remoteAddress();
       if (socketAddress != null && socketAddress.hostAddress() != null) {
         span.remoteIpAndPort(socketAddress.hostAddress(), socketAddress.port());
       }
-      clientHandler.handleSend(tracing.propagation().injector(new Propagation.Setter<HttpClientRequest, String>() {
+      Propagation.Setter<HttpRequest, String> setter = new Propagation.Setter<HttpRequest, String>() {
         @Override
-        public void put(HttpClientRequest carrier, String key, String value) {
+        public void put(HttpRequest carrier, String key, String value) {
           headers.accept(key, value);
         }
         @Override
         public String toString() {
           return "HttpClientRequest::putHeader";
         }
-      }), httpReq, span);
+      };
+      TraceContext.Injector<HttpRequest> injector = tracing.propagation().injector(setter);
+      clientHandler.handleSend(injector, httpRequest, span);
       return (resp, err) -> {
-        clientHandler.handleReceive((HttpClientResponse) resp, err, span);
+        clientHandler.handleReceive((HttpResponse) resp, err, span);
       };
     }
     return null;
