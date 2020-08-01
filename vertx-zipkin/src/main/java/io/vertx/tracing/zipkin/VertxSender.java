@@ -11,6 +11,7 @@ import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.RequestOptions;
 import zipkin2.Call;
 import zipkin2.Callback;
@@ -97,21 +98,25 @@ public class VertxSender extends Sender {
     public void handle(AsyncResult<Callback<Void>> ar) {
       if (ar.succeeded()) {
         Callback<Void> callback = ar.result();
-        Handler<AsyncResult<HttpClientResponse>> handler = res -> {
-          if (res.succeeded()) {
-            callback.onSuccess(null);
-          } else {
-            callback.onError(res.cause());
-          }
-        };
         RequestOptions options = new RequestOptions()
+          .setMethod(HttpMethod.POST)
           .addHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON);
         if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) {
           options.setAbsoluteURI(endpoint);
         } else {
           options.setURI(endpoint);
         }
-        client.post(options, body, handler);
+        client.request(options)
+          .compose(req -> req
+            .send(body)
+            .compose(HttpClientResponse::body))
+          .onComplete(res -> {
+          if (res.succeeded()) {
+            callback.onSuccess(null);
+          } else {
+            callback.onError(res.cause());
+          }
+        });
       }
     }
 

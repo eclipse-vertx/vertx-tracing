@@ -3,6 +3,7 @@ package io.vertx.tracing.zipkin;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -103,8 +104,10 @@ public class ZipkinTest {
     Async responseLatch = ctx.async();
     HttpClient client = vertx.createHttpClient();
     try {
-      client.get(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
-        responseLatch.complete();
+      client.request(HttpMethod.GET, 8080, "localhost", "/", ctx.asyncAssertSuccess(req ->{
+        req.send(ctx.asyncAssertSuccess(resp -> {
+          responseLatch.complete();
+        }));
       }));
       responseLatch.awaitSuccess();
       List<Span> trace = waitUntilTrace(zipkin, 2);
@@ -125,8 +128,10 @@ public class ZipkinTest {
     Async listenLatch = ctx.async(2);
     HttpClient c = vertx.createHttpClient();
     HttpServer server = vertx.createHttpServer().requestHandler(req -> {
-      c.get(8081, "localhost", "/", ctx.asyncAssertSuccess(resp -> {
-        req.response().end();
+      c.request(HttpMethod.GET, 8081, "localhost", "/", ctx.asyncAssertSuccess(clientReq -> {
+        clientReq.send(ctx.asyncAssertSuccess(clientResp -> {
+          req.response().end();
+        }));
       }));
     }).listen(8080, ar -> {
       ctx.assertTrue(ar.succeeded(), "Could not bind on port 8080");
@@ -140,8 +145,10 @@ public class ZipkinTest {
     });
     listenLatch.awaitSuccess();
     Async responseLatch = ctx.async();
-    client.get(8080, "localhost", "/", ctx.asyncAssertSuccess(resp ->{
-      responseLatch.complete();
+    client.request(HttpMethod.GET, 8080, "localhost", "/", ctx.asyncAssertSuccess(clientReq ->{
+      clientReq.send(ctx.asyncAssertSuccess(clientResp -> {
+        responseLatch.complete();
+      }));
     }));
     responseLatch.awaitSuccess();
     List<Span> trace = assertSingleSpan(waitUntilTrace(4));

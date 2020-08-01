@@ -5,6 +5,7 @@ import io.opentracing.mock.MockTracer;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -103,9 +104,11 @@ public class SqlClientTest {
     listenLatch.awaitSuccess();
     Async responseLatch = ctx.async();
     HttpClient client = vertx.createHttpClient();
-    client.get(8080, "localhost", "/", ctx.asyncAssertSuccess(resp -> {
-      ctx.assertEquals(200, resp.statusCode());
-      responseLatch.complete();
+    client.request(HttpMethod.GET, 8080, "localhost", "/", ctx.asyncAssertSuccess(req -> {
+      req.send(ctx.asyncAssertSuccess(resp -> {
+        ctx.assertEquals(200, resp.statusCode());
+        responseLatch.complete();
+      }));
     }));
     responseLatch.awaitSuccess();
     List<MockSpan> spans = waitUntil(2);

@@ -1,13 +1,10 @@
 package io.vertx.tracing.zipkin;
 
-import brave.Tracing;
-import brave.http.HttpTracing;
-import brave.propagation.CurrentTraceContext;
 import brave.propagation.TraceContext;
-import brave.sampler.Sampler;
 import brave.test.http.ITHttpAsyncClient;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -15,6 +12,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientResponse;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.RequestOptions;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -87,9 +85,21 @@ public class ZipkinHttpClientITTest extends ITHttpAsyncClient<HttpClient> {
         }
       };
       if (body == null) {
-        client.get(new RequestOptions().setURI(pathIncludingQuery).setFollowRedirects(true), handler);
+        client.request(new RequestOptions().setURI(pathIncludingQuery).setFollowRedirects(true), ar -> {
+          if (ar.succeeded()) {
+            ar.result().send(handler);
+          } else {
+            handler.handle(Future.failedFuture(ar.cause()));
+          }
+        });
       } else {
-        client.post(pathIncludingQuery, Buffer.buffer(body), handler);
+        client.request(HttpMethod.POST, pathIncludingQuery, ar -> {
+          if (ar.succeeded()) {
+            ar.result().send(Buffer.buffer(body), handler);
+          } else {
+            handler.handle(Future.failedFuture(ar.cause()));
+          }
+        });
       }
     };
     TraceContext traceCtx = currentTraceContext.get();
