@@ -71,6 +71,7 @@
 |[[tryWebSocketDeflateFrameCompression]]`@tryWebSocketDeflateFrameCompression`|`Boolean`|-
 |[[useAlpn]]`@useAlpn`|`Boolean`|-
 |[[verifyHost]]`@verifyHost`|`Boolean`|-
+|[[webSocketClosingTimeout]]`@webSocketClosingTimeout`|`Number (int)`|-
 |[[webSocketCompressionAllowClientNoContext]]`@webSocketCompressionAllowClientNoContext`|`Boolean`|-
 |[[webSocketCompressionLevel]]`@webSocketCompressionLevel`|`Number (int)`|-
 |[[webSocketCompressionRequestServerNoContext]]`@webSocketCompressionRequestServerNoContext`|`Boolean`|-
