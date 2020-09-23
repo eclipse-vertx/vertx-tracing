@@ -17,3 +17,18 @@ over the configuration.
 ----
 {@link examples.OpenTracingExamples#ex2}
 ----
+
+After the Tracer has been configured, Vert.x may inject _spans_ into existing traces for
+some API calls, such as HTTP client or server requests. A trace that starts from a server
+call will be automatically created by Vert.x.
+
+However, to initiate a trace for a client call, you need to create it first and make Vert.x
+aware of it by using `OpenTracingUtil.setSpan`:
+
+[source,$lang]
+----
+{@link examples.OpenTracingExamples#ex3}
+----
+
+In an HTTP scenario between two Vert.x services, a span will be created client-side, then
+the trace context will be propagated server-side and another span will be added to the trace.
