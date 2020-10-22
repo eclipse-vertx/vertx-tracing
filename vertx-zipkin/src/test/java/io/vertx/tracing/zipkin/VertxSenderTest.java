@@ -40,7 +40,7 @@ public class VertxSenderTest {
     ZipkinRule zipkin = new ZipkinRule();
     zipkin.start(9411);
     try {
-      ZipkinTest.testHttpServerRequest(zipkin, vertx, ctx);
+      ZipkinHttpTest.testHttpServerRequest(zipkin, vertx, ctx);
     } finally {
       zipkin.shutdown();
     }

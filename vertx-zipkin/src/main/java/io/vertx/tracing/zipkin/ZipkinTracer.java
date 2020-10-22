@@ -23,8 +23,11 @@ import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
 import io.vertx.core.spi.tracing.TagExtractor;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * - https://zipkin.io/pages/instrumenting.html
@@ -190,15 +193,15 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
 
   @Override
   public <R> BiConsumer<Object, Throwable> sendRequest(Context context, R request, String operation, BiConsumer<String, String> headers, TagExtractor<R> tagExtractor) {
-    TraceContext o = context.getLocal(ACTIVE_CONTEXT);
+    TraceContext activeCtx = context.getLocal(ACTIVE_CONTEXT);
+    Span span;
+    if (activeCtx == null) {
+      span = tracing.tracer().newTrace();
+    } else {
+      span = tracing.tracer().newChild(activeCtx);
+    }
     if (request instanceof HttpRequest) {
       HttpRequest httpRequest = (HttpRequest) request;
-      Span span;
-      if (o == null) {
-        span = tracing.tracer().newTrace();
-      } else {
-        span = tracing.tracer().newChild(o);
-      }
       SocketAddress socketAddress = httpRequest.remoteAddress();
       if (socketAddress != null && socketAddress.hostAddress() != null) {
         span.remoteIpAndPort(socketAddress.hostAddress(), socketAddress.port());
@@ -218,9 +221,48 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       return (resp, err) -> {
         clientHandler.handleReceive((HttpResponse) resp, err, span);
       };
+    } else {
+      span.kind(Span.Kind.CLIENT);
+      span.name(operation);
+      reportTags(request, tagExtractor, span);
+      return (resp, err) -> {
+        if (err != null) {
+          span.error(err);
+        }
+        span.finish();
+      };
     }
-    return null;
   }
+
+  private static <R> void reportTags(R request, TagExtractor<R> tagExtractor, Span span) {
+    int len = tagExtractor.len(request);
+    for (int i = 0;i < len;i++) {
+      String name = tagExtractor.name(request, i);
+      String value = tagExtractor.value(request, i);
+      switch (name) {
+        case "db.statement":
+          span.tag("sql.query", value);
+          break;
+        case "db.instance":
+          span.remoteServiceName(value);
+          break;
+        case "peer.address":
+          Matcher matcher = P.matcher(value);
+          if (matcher.matches()) {
+            String host = matcher.group(1);
+            int port = Integer.parseInt(matcher.group(2));
+            span.remoteIpAndPort(host, port);
+          }
+          break;
+      }
+    }
+  }
+
+  private static final Pattern P = Pattern.compile("^([^:]+):([0-9]+)$");
+
+
+
+
 
   @Override
   public <R> void receiveResponse(Context context, R response, BiConsumer<Object, Throwable> payload, Throwable failure, TagExtractor<R> tagExtractor) {
