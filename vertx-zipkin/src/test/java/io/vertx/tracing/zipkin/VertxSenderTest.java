@@ -12,13 +12,23 @@ package io.vertx.tracing.zipkin;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.core.tracing.TracingPolicy;
+import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import zipkin2.Span;
 import zipkin2.junit.ZipkinRule;
+
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 @RunWith(VertxUnitRunner.class)
 public class VertxSenderTest {
@@ -39,9 +49,25 @@ public class VertxSenderTest {
   public void testDefaultSenderEndpoint(TestContext ctx) throws Exception {
     ZipkinRule zipkin = new ZipkinRule();
     zipkin.start(9411);
+    HttpClient client = vertx.createHttpClient(new HttpClientOptions().setTracingPolicy(TracingPolicy.ALWAYS));
     try {
-      ZipkinHttpTest.testHttpServerRequest(zipkin, vertx, ctx);
+      Async listenLatch = ctx.async();
+      vertx.createHttpServer().requestHandler(req -> {
+        req.response().end();
+      }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.complete()));
+      listenLatch.awaitSuccess();
+      Async responseLatch = ctx.async();
+      client.request(HttpMethod.GET, 8080, "localhost", "/", ctx.asyncAssertSuccess(req -> {
+        req.send(ctx.asyncAssertSuccess(resp -> {
+          responseLatch.complete();
+        }));
+      }));
+      responseLatch.awaitSuccess();
+      List<Span> trace = ZipkinBaseTest.waitUntilTrace(zipkin, 2);
+      assertEquals(2, trace.size());
+      responseLatch.await(10000);
     } finally {
+      client.close();
       zipkin.shutdown();
     }
   }

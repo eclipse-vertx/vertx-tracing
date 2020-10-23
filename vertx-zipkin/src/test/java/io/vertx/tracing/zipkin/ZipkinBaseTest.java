@@ -13,8 +13,10 @@ package io.vertx.tracing.zipkin;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -50,7 +52,7 @@ public abstract class ZipkinBaseTest {
         .setSupportsJoin(false)
         .setSenderOptions(new HttpSenderOptions().setSenderEndpoint(url))
     ));
-    client = vertx.createHttpClient();
+    client = vertx.createHttpClient(new HttpClientOptions().setTracingPolicy(TracingPolicy.ALWAYS));
   }
 
   @After
@@ -72,7 +74,7 @@ public abstract class ZipkinBaseTest {
       }
       Thread.sleep(10);
     }
-    throw new AssertionError();
+    throw new AssertionError("Got traces " + zipkin.getTraces());
   }
 
   List<Span> assertSingleSpan(List<Span> spans) {

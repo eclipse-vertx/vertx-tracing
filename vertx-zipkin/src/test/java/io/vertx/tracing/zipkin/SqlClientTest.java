@@ -11,7 +11,9 @@
 package io.vertx.tracing.zipkin;
 
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.pgclient.PgConnectOptions;
@@ -87,7 +89,7 @@ public class SqlClientTest extends ZipkinBaseTest {
     }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.complete()));
     listenLatch.awaitSuccess();
     Async responseLatch = ctx.async();
-    HttpClient client = vertx.createHttpClient();
+    HttpClient client = vertx.createHttpClient(new HttpClientOptions().setTracingPolicy(TracingPolicy.ALWAYS));
     client.request(HttpMethod.GET, 8080, "localhost", "/", ctx.asyncAssertSuccess(req -> {
       req.send(ctx.asyncAssertSuccess(resp -> {
         ctx.assertEquals(200, resp.statusCode());

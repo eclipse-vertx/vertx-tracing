@@ -12,10 +12,16 @@ package io.vertx.tracing.opentracing;
 
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
+import io.opentracing.propagation.Format;
+import io.opentracing.propagation.TextMapAdapter;
+import io.opentracing.tag.Tags;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -24,7 +30,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 
@@ -60,32 +70,93 @@ public class OpenTracingTest {
   }
 
   @Test
-  public void testHttpServerRequest(TestContext ctx) throws Exception {
-    Async listenLatch = ctx.async();
-    vertx.createHttpServer().requestHandler(req -> {
-      req.response().end();
-    }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.complete()));
-    listenLatch.awaitSuccess();
-    Async responseLatch = ctx.async();
-    HttpClient client = vertx.createHttpClient();
-    client.request(HttpMethod.GET, 8080, "localhost", "/", ctx.asyncAssertSuccess(req ->{
-      req.send(ctx.asyncAssertSuccess(resp -> {
-        responseLatch.complete();
-      }));
-    }));
-    responseLatch.awaitSuccess();
-    List<MockSpan> spans = waitUntil(1);
-    MockSpan span = spans.get(0);
-    assertEquals("GET", span.operationName());
-    assertEquals("GET", span.tags().get("http.method"));
-    assertEquals("http://localhost:8080/", span.tags().get("http.url"));
-    assertEquals("200", span.tags().get("http.status_code"));
+  public void testHttpServerRequestIgnorePolicy1(TestContext ctx) throws Exception {
+    testHttpServerRequestPolicy(ctx, new HttpServerOptions().setTracingPolicy(TracingPolicy.IGNORE), true, false);
   }
 
   @Test
-  public void testHttpClientRequest(TestContext ctx) throws Exception {
+  public void testHttpServerRequestIgnorePolicy2(TestContext ctx) throws Exception {
+    testHttpServerRequestPolicy(ctx, new HttpServerOptions().setTracingPolicy(TracingPolicy.IGNORE), false, false);
+  }
+
+  @Test
+  public void testHttpServerRequestPropagatePolicy1(TestContext ctx) throws Exception {
+    testHttpServerRequestPolicy(ctx, new HttpServerOptions().setTracingPolicy(TracingPolicy.PROPAGATE), true, true);
+  }
+
+  @Test
+  public void testHttpServerRequestPropagatePolicy2(TestContext ctx) throws Exception {
+    testHttpServerRequestPolicy(ctx, new HttpServerOptions().setTracingPolicy(TracingPolicy.PROPAGATE), false, false);
+  }
+
+  @Test
+  public void testHttpServerRequestSupportPolicy1(TestContext ctx) throws Exception {
+    testHttpServerRequestPolicy(ctx, new HttpServerOptions().setTracingPolicy(TracingPolicy.ALWAYS), false, true);
+  }
+
+  @Test
+  public void testHttpServerRequestSupportPolicy2(TestContext ctx) throws Exception {
+    testHttpServerRequestPolicy(ctx, new HttpServerOptions().setTracingPolicy(TracingPolicy.ALWAYS), true, true);
+  }
+
+  private void testHttpServerRequestPolicy(TestContext ctx,
+                                           HttpServerOptions options,
+                                           boolean createTrace,
+                                           boolean expectTrace) throws Exception {
+    Async listenLatch = ctx.async();
+    vertx.createHttpServer(options).requestHandler(req -> {
+      if (expectTrace) {
+        ctx.assertNotNull(Vertx.currentContext().getLocal(OpenTracingUtil.ACTIVE_SPAN));
+      } else {
+        ctx.assertNull(Vertx.currentContext().getLocal(OpenTracingUtil.ACTIVE_SPAN));
+      }
+      req.response().end();
+    }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
+    listenLatch.awaitSuccess();
+    sendRequest(createTrace);
+    if (expectTrace) {
+      List<MockSpan> spans = waitUntil(1);
+      MockSpan span = spans.get(0);
+      assertEquals("GET", span.operationName());
+      assertEquals("GET", span.tags().get("http.method"));
+      assertEquals("http://localhost:8080/", span.tags().get("http.url"));
+      assertEquals("200", span.tags().get("http.status_code"));
+    }
+  }
+
+  @Test
+  public void testHttpClientRequestIgnorePolicy1(TestContext ctx) throws Exception {
+    testHttpClientRequest(ctx, new HttpClientOptions().setTracingPolicy(TracingPolicy.IGNORE), true, 1);
+  }
+
+  @Test
+  public void testHttpClientRequestIgnorePolicy2(TestContext ctx) throws Exception {
+    testHttpClientRequest(ctx, new HttpClientOptions().setTracingPolicy(TracingPolicy.IGNORE), false, 0);
+  }
+
+  @Test
+  public void testHttpClientRequestPropagatePolicy1(TestContext ctx) throws Exception {
+    testHttpClientRequest(ctx, new HttpClientOptions().setTracingPolicy(TracingPolicy.PROPAGATE), true, 3);
+  }
+
+  @Test
+  public void testHttpClientRequestPropagatePolicy2(TestContext ctx) throws Exception {
+    testHttpClientRequest(ctx, new HttpClientOptions().setTracingPolicy(TracingPolicy.PROPAGATE), false, 0);
+  }
+
+  @Test
+  public void testHttpClientRequestSupportPolicy1(TestContext ctx) throws Exception {
+    testHttpClientRequest(ctx, new HttpClientOptions().setTracingPolicy(TracingPolicy.ALWAYS), true, 3);
+  }
+
+  @Test
+  public void testHttpClientRequestSupportPolicy2(TestContext ctx) throws Exception {
+    testHttpClientRequest(ctx, new HttpClientOptions().setTracingPolicy(TracingPolicy.ALWAYS), false, 2);
+  }
+
+  private List<MockSpan> testHttpClientRequest(TestContext ctx, HttpClientOptions options, boolean createTrace, int expectedTrace) throws Exception {
     Async listenLatch = ctx.async(2);
-    HttpClient c = vertx.createHttpClient();
+    HttpClient c = vertx.createHttpClient(options);
     vertx.createHttpServer().requestHandler(req -> {
       c.request(HttpMethod.GET, 8081, "localhost", "/", ctx.asyncAssertSuccess(clientReq -> {
         clientReq.send(ctx.asyncAssertSuccess(clientResp -> {
@@ -97,21 +168,42 @@ public class OpenTracingTest {
       req.response().end();
     }).listen(8081, ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
     listenLatch.awaitSuccess();
-    Async responseLatch = ctx.async();
-    HttpClient client = vertx.createHttpClient();
-    client.request(HttpMethod.GET, 8080, "localhost", "/", ctx.asyncAssertSuccess(req ->{
-      req.send(ctx.asyncAssertSuccess(resp -> {
-        responseLatch.complete();
-      }));
-    }));
-    responseLatch.awaitSuccess();
-    List<MockSpan> spans = waitUntil(3);
-    assertSingleSpan(spans);
-    MockSpan span = spans.get(0);
-    assertEquals("GET", span.operationName());
-    assertEquals("GET", span.tags().get("http.method"));
-    assertEquals("http://localhost:8081/", span.tags().get("http.url"));
-    assertEquals("200", span.tags().get("http.status_code"));
+    sendRequest(createTrace);
+    Thread.sleep(1000);
+    assertEquals(expectedTrace, tracer.finishedSpans().size());
+    List<MockSpan> spans = tracer.finishedSpans();
+    if (expectedTrace > 0) {
+      assertSingleSpan(spans);
+      Optional<MockSpan> opt = spans.stream().filter(span -> {
+        try {
+          assertEquals("GET", span.operationName());
+          assertEquals("GET", span.tags().get("http.method"));
+          assertEquals(createTrace ? "http://localhost:8080/" : "http://localhost:8081/", span.tags().get("http.url"));
+          assertEquals("200", span.tags().get("http.status_code"));
+          return true;
+        } catch (AssertionError e) {
+          return false;
+        }
+      }).findFirst();
+      ctx.assertTrue(opt.isPresent());
+    }
+    return spans;
+  }
+
+  private void sendRequest(boolean withTrace) throws Exception {
+    URL url = new URL("http://localhost:8080");
+    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+    con.setRequestMethod("GET");
+    if (withTrace) {
+      MockSpan span = tracer.buildSpan("test")
+        .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT)
+        .withTag(Tags.COMPONENT.getKey(), "vertx")
+        .start();
+      HashMap<String, String> headers = new HashMap<>();
+      tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new TextMapAdapter(headers));
+      headers.forEach(con::setRequestProperty);
+    }
+    assertEquals(200, con.getResponseCode());
   }
 
   @Test
@@ -129,14 +221,7 @@ public class OpenTracingTest {
       req.response().end();
     }).listen(8081, ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
     listenLatch.awaitSuccess();
-    Async responseLatch = ctx.async();
-    HttpClient client = vertx.createHttpClient();
-    client.request(HttpMethod.GET, 8080, "localhost", "/", ctx.asyncAssertSuccess(req ->{
-      req.send(ctx.asyncAssertSuccess(resp -> {
-        responseLatch.complete();
-      }));
-    }));
-    responseLatch.awaitSuccess();
+    sendRequest(true);
     List<MockSpan> spans = waitUntil(3);
     assertSingleSpan(spans);
     MockSpan span = spans.get(0);
