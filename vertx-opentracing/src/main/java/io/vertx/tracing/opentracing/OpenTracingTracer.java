@@ -22,6 +22,8 @@ import io.opentracing.propagation.TextMap;
 import io.opentracing.tag.Tags;
 import io.vertx.core.Context;
 import io.vertx.core.spi.tracing.TagExtractor;
+import io.vertx.core.tracing.TracingPolicy;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -56,28 +58,37 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
   }
 
   @Override
-  public <R> Span receiveRequest(Context context, R request, String operation,
-    Iterable<Map.Entry<String, String>> headers, TagExtractor<R> tagExtractor) {
-    SpanContext sc = tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMap() {
-      @Override
-      public Iterator<Map.Entry<String, String>> iterator() {
-        return headers.iterator();
-      }
+  public <R> Span receiveRequest(Context context,
+                                 TracingPolicy policy,
+                                 R request,
+                                 String operation,
+                                 Iterable<Map.Entry<String, String>> headers,
+                                 TagExtractor<R> tagExtractor) {
+    if (policy != TracingPolicy.IGNORE) {
+      SpanContext sc = tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMap() {
+        @Override
+        public Iterator<Map.Entry<String, String>> iterator() {
+          return headers.iterator();
+        }
 
-      @Override
-      public void put(String key, String value) {
-        throw new UnsupportedOperationException();
+        @Override
+        public void put(String key, String value) {
+          throw new UnsupportedOperationException();
+        }
+      });
+      if (sc != null || policy == TracingPolicy.ALWAYS) {
+        Span span = tracer.buildSpan(operation)
+          .ignoreActiveSpan()
+          .asChildOf(sc)
+          .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
+          .withTag(Tags.COMPONENT.getKey(), "vertx")
+          .start();
+        reportTags(span, request, tagExtractor);
+        context.putLocal(ACTIVE_SPAN, span);
+        return span;
       }
-    });
-    Span span = tracer.buildSpan(operation)
-      .ignoreActiveSpan()
-      .asChildOf(sc)
-      .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
-      .withTag(Tags.COMPONENT.getKey(), "vertx")
-      .start();
-    reportTags(span, request, tagExtractor);
-    context.putLocal(ACTIVE_SPAN, span);
-    return span;
+    }
+    return null;
   }
 
   @Override
@@ -94,10 +105,17 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
   }
 
   @Override
-  public <R> Span sendRequest(Context context, R request, String operation,
-    BiConsumer<String, String> headers, TagExtractor<R> tagExtractor) {
+  public <R> Span sendRequest(Context context,
+                              TracingPolicy policy,
+                              R request,
+                              String operation,
+                              BiConsumer<String, String> headers,
+                              TagExtractor<R> tagExtractor) {
+    if (policy == TracingPolicy.IGNORE) {
+      return null;
+    }
     Span active = context.getLocal(ACTIVE_SPAN);
-    if (active != null) {
+    if (active != null || policy == TracingPolicy.ALWAYS) {
       Span span = tracer
         .buildSpan(operation)
         .asChildOf(active)

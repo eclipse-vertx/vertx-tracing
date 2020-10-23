@@ -24,6 +24,7 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.RequestOptions;
+import io.vertx.core.tracing.TracingPolicy;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -69,6 +70,7 @@ public class ZipkinHttpClientITTest extends ITHttpAsyncClient<HttpClient> {
     return vertx.createHttpClient(new HttpClientOptions()
       .setDefaultPort(port)
       .setDefaultHost("127.0.0.1")
+      .setTracingPolicy(TracingPolicy.ALWAYS)
     );
   }
 

@@ -19,7 +19,9 @@ import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.tracing.TracingPolicy;
 import org.junit.After;
 
 import java.util.concurrent.CompletableFuture;
@@ -35,7 +37,7 @@ public class ZipkinHttpServerITTest extends ITHttpServer implements Handler<Http
   @Override
   protected void init() throws Exception {
     vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new ZipkinTracingOptions(httpTracing)));
-    server = vertx.createHttpServer().requestHandler(this);
+    server = vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.ALWAYS)).requestHandler(this);
     CompletableFuture<Integer> fut = new CompletableFuture<>();
     server.listen(0, "localhost", ar -> {
       if (ar.succeeded()) {

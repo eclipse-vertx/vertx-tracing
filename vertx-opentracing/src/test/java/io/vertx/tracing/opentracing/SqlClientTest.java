@@ -15,7 +15,9 @@ import io.opentracing.mock.MockTracer;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -113,7 +115,7 @@ public class SqlClientTest {
     }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.complete()));
     listenLatch.awaitSuccess();
     Async responseLatch = ctx.async();
-    HttpClient client = vertx.createHttpClient();
+    HttpClient client = vertx.createHttpClient(new HttpClientOptions().setTracingPolicy(TracingPolicy.ALWAYS));
     client.request(HttpMethod.GET, 8080, "localhost", "/", ctx.asyncAssertSuccess(req -> {
       req.send(ctx.asyncAssertSuccess(resp -> {
         ctx.assertEquals(200, resp.statusCode());
@@ -121,7 +123,7 @@ public class SqlClientTest {
       }));
     }));
     responseLatch.awaitSuccess();
-    List<MockSpan> spans = waitUntil(2);
+    List<MockSpan> spans = waitUntil(3);
     MockSpan requestSpan = spans.get(0);
     assertEquals("GET", requestSpan.operationName());
     assertEquals("GET", requestSpan.tags().get("http.method"));

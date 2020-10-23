@@ -11,6 +11,7 @@
 package io.vertx.tracing.zipkin;
 
 import brave.Span;
+import brave.Tracer;
 import brave.Tracing;
 import brave.http.*;
 import brave.propagation.Propagation;
@@ -22,6 +23,7 @@ import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
 import io.vertx.core.spi.tracing.TagExtractor;
+import io.vertx.core.tracing.TracingPolicy;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -164,17 +166,25 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
     this.httpServerExtractor = httpTracing.tracing().propagation().extractor(GETTER);
   }
 
+  public Tracing getTracing() {
+    return tracing;
+  }
+
   @Override
-  public <R> Span receiveRequest(Context context, R request, String operation, Iterable<Map.Entry<String, String>> headers, TagExtractor<R> tagExtractor) {
+  public <R> Span receiveRequest(Context context, TracingPolicy policy, R request, String operation, Iterable<Map.Entry<String, String>> headers, TagExtractor<R> tagExtractor) {
+    if (policy == TracingPolicy.IGNORE) {
+      return null;
+    }
     if (request instanceof HttpServerRequest) {
       HttpServerRequest httpReq = (HttpServerRequest) request;
-      Span span = httpServerHandler.handleReceive(httpServerExtractor, httpReq);
-      if (span != null) {
+      String traceId = httpReq.getHeader("X-B3-TraceId");
+      if (traceId != null || policy == TracingPolicy.ALWAYS) {
+        Span span = httpServerHandler.handleReceive(httpServerExtractor, httpReq);
         context.putLocal(ACTIVE_SPAN, span);
         context.putLocal(ACTIVE_REQUEST, request);
         context.putLocal(ACTIVE_CONTEXT, span.context());
+        return span;
       }
-      return span;
     }
     return null;
   }
@@ -192,10 +202,16 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
   }
 
   @Override
-  public <R> BiConsumer<Object, Throwable> sendRequest(Context context, R request, String operation, BiConsumer<String, String> headers, TagExtractor<R> tagExtractor) {
+  public <R> BiConsumer<Object, Throwable> sendRequest(Context context, TracingPolicy policy, R request, String operation, BiConsumer<String, String> headers, TagExtractor<R> tagExtractor) {
+    if (policy == TracingPolicy.IGNORE) {
+      return null;
+    }
     TraceContext activeCtx = context.getLocal(ACTIVE_CONTEXT);
     Span span;
     if (activeCtx == null) {
+      if (policy != TracingPolicy.ALWAYS) {
+        return null;
+      }
       span = tracing.tracer().newTrace();
     } else {
       span = tracing.tracer().newChild(activeCtx);
