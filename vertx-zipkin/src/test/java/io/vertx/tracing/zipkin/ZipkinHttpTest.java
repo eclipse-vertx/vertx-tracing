@@ -27,7 +27,10 @@ import zipkin2.Span;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 
@@ -85,29 +88,46 @@ public class ZipkinHttpTest extends ZipkinBaseTest {
 
   @Test
   public void testHttpClientRequestIgnorePolicy1(TestContext ctx) throws Exception {
-    List<Span> trace = testHttpClientRequest(ctx, TracingPolicy.IGNORE, true, 2);
-    Span span1 = trace.get(0);
+    testHttpClientRequest(ctx, TracingPolicy.IGNORE, true, 2);
+    List<List<Span>> traces = waitUntilTrace(() -> {
+      List<List<Span>> tmp = zipkin.getTraces();
+      if (tmp.size() == 2) {
+        return Optional.of(tmp);
+      }
+      return Optional.empty();
+    });
+    Map<Integer, List<Span>> traceMap = new HashMap<>();
+    traces.forEach(trace -> traceMap.put(trace.size(), assertSingleSpan(trace)));
+    Span span1 = traceMap.get(2).get(0);
     assertEquals(Span.Kind.CLIENT, span1.kind());
     assertEquals("my-service-name", span1.localServiceName());
     assertEquals("get", span1.name());
     assertEquals("GET", span1.tags().get("http.method"));
     assertEquals("/", span1.tags().get("http.path"));
     assertEquals(8080, span1.remoteEndpoint().portAsInt());
-    Span span2 = trace.get(1);
+    Span span2 = traceMap.get(2).get(1);
     assertEquals(Span.Kind.SERVER, span2.kind());
     assertEquals("get", span2.name());
     assertEquals("GET", span2.tags().get("http.method"));
     assertEquals("/", span2.tags().get("http.path"));
+    Span span3 = traceMap.get(1).get(0);
+    assertEquals(Span.Kind.SERVER, span3.kind());
+    assertEquals("get", span3.name());
+    assertEquals("GET", span3.tags().get("http.method"));
+    assertEquals("/", span3.tags().get("http.path"));
   }
 
   @Test
   public void testHttpClientRequestIgnorePolicy2(TestContext ctx) throws Exception {
     testHttpClientRequest(ctx, TracingPolicy.IGNORE, false, 0);
+    Thread.sleep(100);
+    assertEquals(0, zipkin.getTraces().size());
   }
 
   @Test
   public void testHttpClientRequestPropagatePolicy1(TestContext ctx) throws Exception {
-    List<Span> trace = testHttpClientRequest(ctx, TracingPolicy.PROPAGATE, true, 4);
+    testHttpClientRequest(ctx, TracingPolicy.PROPAGATE, true, 4);
+    List<Span> trace = assertSingleSpan(waitUntilTrace(4));
     Span span1 = trace.get(0);
     assertEquals(Span.Kind.CLIENT, span1.kind());
     assertEquals("my-service-name", span1.localServiceName());
@@ -136,11 +156,14 @@ public class ZipkinHttpTest extends ZipkinBaseTest {
   @Test
   public void testHttpClientRequestPropagatePolicy2(TestContext ctx) throws Exception {
     testHttpClientRequest(ctx, TracingPolicy.PROPAGATE, false, 0);
+    Thread.sleep(100);
+    assertEquals(0, zipkin.getTraces().size());
   }
 
   @Test
-  public void testHttpClientRequestSupportPolicy1(TestContext ctx) throws Exception {
-    List<Span> trace = testHttpClientRequest(ctx, TracingPolicy.ALWAYS, true, 4);
+  public void testHttpClientRequestAlwaysPolicy1(TestContext ctx) throws Exception {
+    testHttpClientRequest(ctx, TracingPolicy.ALWAYS, true, 4);
+    List<Span> trace = assertSingleSpan(waitUntilTrace(4));
     Span span1 = trace.get(0);
     assertEquals(Span.Kind.CLIENT, span1.kind());
     assertEquals("my-service-name", span1.localServiceName());
@@ -167,8 +190,9 @@ public class ZipkinHttpTest extends ZipkinBaseTest {
   }
 
   @Test
-  public void testHttpClientRequestSupportPolicy2(TestContext ctx) throws Exception {
-    List<Span> trace = testHttpClientRequest(ctx, TracingPolicy.ALWAYS, false, 2);
+  public void testHttpClientRequestAlwaysPolicy2(TestContext ctx) throws Exception {
+    testHttpClientRequest(ctx, TracingPolicy.ALWAYS, false, 2);
+    List<Span> trace = assertSingleSpan(waitUntilTrace(2));
     Span span1 = trace.get(0);
     assertEquals(Span.Kind.CLIENT, span1.kind());
     assertEquals("get", span1.name());
@@ -182,10 +206,10 @@ public class ZipkinHttpTest extends ZipkinBaseTest {
     assertEquals("/", span2.tags().get("http.path"));
   }
 
-  private List<Span> testHttpClientRequest(TestContext ctx, TracingPolicy policy, boolean withTrace, int expectedSpans) throws Exception {
+  private void testHttpClientRequest(TestContext ctx, TracingPolicy policy, boolean withTrace, int expectedSpans) throws Exception {
     Async listenLatch = ctx.async(2);
     HttpClient c = vertx.createHttpClient(new HttpClientOptions().setTracingPolicy(policy));
-    vertx.createHttpServer().requestHandler(req -> {
+    vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.PROPAGATE)).requestHandler(req -> {
       c.request(HttpMethod.GET, 8081, "localhost", "/", ctx.asyncAssertSuccess(clientReq -> {
         clientReq.send(ctx.asyncAssertSuccess(clientResp -> {
           req.response().end();
@@ -203,14 +227,6 @@ public class ZipkinHttpTest extends ZipkinBaseTest {
     });
     listenLatch.awaitSuccess();
     sendRequest(withTrace);
-    if (expectedSpans > 0) {
-      List<Span> trace = assertSingleSpan(waitUntilTrace(expectedSpans));
-      assertEquals(expectedSpans, trace.size());
-      return trace;
-    } else {
-      assertEquals(0, zipkin.getTraces().size());
-      return Collections.emptyList();
-    }
   }
 
   private void sendRequest(boolean withTrace) throws Exception {

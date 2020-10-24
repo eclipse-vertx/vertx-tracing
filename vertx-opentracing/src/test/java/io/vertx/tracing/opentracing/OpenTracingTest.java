@@ -126,45 +126,45 @@ public class OpenTracingTest {
 
   @Test
   public void testHttpClientRequestIgnorePolicy1(TestContext ctx) throws Exception {
-    testHttpClientRequest(ctx, new HttpClientOptions().setTracingPolicy(TracingPolicy.IGNORE), true, 1);
+    testHttpClientRequest(ctx, TracingPolicy.IGNORE, true, 1);
   }
 
   @Test
   public void testHttpClientRequestIgnorePolicy2(TestContext ctx) throws Exception {
-    testHttpClientRequest(ctx, new HttpClientOptions().setTracingPolicy(TracingPolicy.IGNORE), false, 0);
+    testHttpClientRequest(ctx, TracingPolicy.IGNORE, false, 0);
   }
 
   @Test
   public void testHttpClientRequestPropagatePolicy1(TestContext ctx) throws Exception {
-    testHttpClientRequest(ctx, new HttpClientOptions().setTracingPolicy(TracingPolicy.PROPAGATE), true, 3);
+    testHttpClientRequest(ctx, TracingPolicy.PROPAGATE, true, 3);
   }
 
   @Test
   public void testHttpClientRequestPropagatePolicy2(TestContext ctx) throws Exception {
-    testHttpClientRequest(ctx, new HttpClientOptions().setTracingPolicy(TracingPolicy.PROPAGATE), false, 0);
+    testHttpClientRequest(ctx, TracingPolicy.PROPAGATE, false, 0);
   }
 
   @Test
-  public void testHttpClientRequestSupportPolicy1(TestContext ctx) throws Exception {
-    testHttpClientRequest(ctx, new HttpClientOptions().setTracingPolicy(TracingPolicy.ALWAYS), true, 3);
+  public void testHttpClientRequestAlwaysPolicy1(TestContext ctx) throws Exception {
+    testHttpClientRequest(ctx, TracingPolicy.ALWAYS, true, 3);
   }
 
   @Test
-  public void testHttpClientRequestSupportPolicy2(TestContext ctx) throws Exception {
-    testHttpClientRequest(ctx, new HttpClientOptions().setTracingPolicy(TracingPolicy.ALWAYS), false, 2);
+  public void testHttpClientRequestAlwaysPolicy2(TestContext ctx) throws Exception {
+    testHttpClientRequest(ctx, TracingPolicy.ALWAYS, false, 2);
   }
 
-  private List<MockSpan> testHttpClientRequest(TestContext ctx, HttpClientOptions options, boolean createTrace, int expectedTrace) throws Exception {
+  private List<MockSpan> testHttpClientRequest(TestContext ctx, TracingPolicy policy, boolean createTrace, int expectedTrace) throws Exception {
     Async listenLatch = ctx.async(2);
-    HttpClient c = vertx.createHttpClient(options);
-    vertx.createHttpServer().requestHandler(req -> {
+    HttpClient c = vertx.createHttpClient(new HttpClientOptions().setTracingPolicy(policy));
+    vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.PROPAGATE)).requestHandler(req -> {
       c.request(HttpMethod.GET, 8081, "localhost", "/", ctx.asyncAssertSuccess(clientReq -> {
         clientReq.send(ctx.asyncAssertSuccess(clientResp -> {
           req.response().end();
         }));
       }));
     }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
-    vertx.createHttpServer().requestHandler(req -> {
+    vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.PROPAGATE)).requestHandler(req -> {
       req.response().end();
     }).listen(8081, ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
     listenLatch.awaitSuccess();

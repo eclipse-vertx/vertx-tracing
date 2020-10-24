@@ -31,6 +31,8 @@ import zipkin2.junit.ZipkinRule;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.Callable;
 
 import static org.junit.Assert.assertEquals;
 
@@ -75,6 +77,18 @@ public abstract class ZipkinBaseTest {
       Thread.sleep(10);
     }
     throw new AssertionError("Got traces " + zipkin.getTraces());
+  }
+
+  static <T> T waitUntilTrace(Callable<Optional<T>> pred) throws Exception {
+    long now = System.currentTimeMillis();
+    while ((System.currentTimeMillis() - now) < 10000 ) {
+      Optional<T> opt = pred.call();
+      if (opt.isPresent()) {
+        return opt.get();
+      }
+      Thread.sleep(10);
+    }
+    throw new AssertionError();
   }
 
   List<Span> assertSingleSpan(List<Span> spans) {
