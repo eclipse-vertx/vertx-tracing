@@ -11,17 +11,18 @@
 package io.vertx.tracing.zipkin;
 
 import brave.Span;
-import brave.Tracer;
 import brave.Tracing;
 import brave.http.*;
 import brave.propagation.Propagation;
 import brave.propagation.TraceContext;
+import brave.propagation.TraceContextOrSamplingFlags;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.*;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
+import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.tracing.TracingPolicy;
 
@@ -114,15 +115,17 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       }
     };
 
-  private static final Propagation.Getter<HttpServerRequest, String> GETTER = new Propagation.Getter<HttpServerRequest, String>() {
+  private static final Propagation.Getter<HttpServerRequest, String> HTTP_SERVER_GETTER = new Propagation.Getter<HttpServerRequest, String>() {
     @Override
     public String get(HttpServerRequest carrier, String key) {
       return carrier.getHeader(key);
     }
+  };
 
+  private static final Propagation.Getter<Map<String, String>, String> MAP_GETTER = new Propagation.Getter<Map<String, String>, String>() {
     @Override
-    public String toString() {
-      return "HttpServerRequest::getHeader";
+    public String get(Map<String, String> carrier, String key) {
+      return carrier.get(key);
     }
   };
 
@@ -132,7 +135,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
   public static Span activeSpan() {
     Context ctx = Vertx.currentContext();
     if (ctx != null) {
-      return (Span) ctx.getLocal(ACTIVE_SPAN);
+      return ctx.getLocal(ACTIVE_SPAN);
     }
     return null;
   }
@@ -143,7 +146,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
   public static TraceContext activeContext() {
     Context ctx = Vertx.currentContext();
     if (ctx != null) {
-      return (TraceContext) ctx.getLocal(ACTIVE_CONTEXT);
+      return ctx.getLocal(ACTIVE_CONTEXT);
     }
     return null;
   }
@@ -153,6 +156,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
   private final boolean closeTracer;
   private final HttpServerHandler<HttpServerRequest, HttpServerRequest> httpServerHandler;
   private final HttpClientHandler<HttpRequest, HttpResponse> clientHandler;
+  private final TraceContext.Extractor<Map<String, String>> mapExtractor;
 
   public ZipkinTracer(boolean closeTracer, Tracing tracing) {
     this(closeTracer, HttpTracing.newBuilder(tracing).build());
@@ -163,7 +167,8 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
     this.tracing = httpTracing.tracing();
     this.clientHandler = HttpClientHandler.create(httpTracing, HTTP_CLIENT_ADAPTER);
     this.httpServerHandler = HttpServerHandler.create(httpTracing, HTTP_SERVER_ADAPTER);
-    this.httpServerExtractor = httpTracing.tracing().propagation().extractor(GETTER);
+    this.httpServerExtractor = httpTracing.tracing().propagation().extractor(HTTP_SERVER_GETTER);
+    this.mapExtractor = tracing.propagation().extractor(MAP_GETTER);
   }
 
   public Tracing getTracing() {
@@ -171,22 +176,39 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
   }
 
   @Override
-  public <R> Span receiveRequest(Context context, TracingPolicy policy, R request, String operation, Iterable<Map.Entry<String, String>> headers, TagExtractor<R> tagExtractor) {
+  public <R> Span receiveRequest(Context context, SpanKind kind, TracingPolicy policy, R request, String operation, Iterable<Map.Entry<String, String>> headers, TagExtractor<R> tagExtractor) {
     if (policy == TracingPolicy.IGNORE) {
       return null;
     }
+    Span span;
     if (request instanceof HttpServerRequest) {
       HttpServerRequest httpReq = (HttpServerRequest) request;
       String traceId = httpReq.getHeader("X-B3-TraceId");
-      if (traceId != null || policy == TracingPolicy.ALWAYS) {
-        Span span = httpServerHandler.handleReceive(httpServerExtractor, httpReq);
-        context.putLocal(ACTIVE_SPAN, span);
-        context.putLocal(ACTIVE_REQUEST, request);
-        context.putLocal(ACTIVE_CONTEXT, span.context());
-        return span;
+      if (traceId == null && policy == TracingPolicy.PROPAGATE) {
+        return null;
       }
+      span = httpServerHandler.handleReceive(httpServerExtractor, httpReq);
+    } else {
+      Map<String, String> headerMap = new HashMap<>();
+      for (Map.Entry<String, String> header : headers) {
+        headerMap.put(header.getKey(), header.getValue());
+      }
+      TraceContextOrSamplingFlags extracted = mapExtractor.extract(headerMap);
+      if (extracted.context() != null) {
+        span = tracing.tracer().joinSpan(extracted.context());
+      } else if (policy == TracingPolicy.ALWAYS) {
+        span = tracing.tracer().newTrace();
+      } else {
+        return null;
+      }
+      span.kind(kind == SpanKind.RPC ? Span.Kind.SERVER : Span.Kind.CONSUMER);
+      span.name(operation);
+      reportTags(request, tagExtractor, span);
     }
-    return null;
+    context.putLocal(ACTIVE_SPAN, span);
+    context.putLocal(ACTIVE_REQUEST, request);
+    context.putLocal(ACTIVE_CONTEXT, span.context());
+    return span;
   }
 
   @Override
@@ -195,14 +217,16 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       context.removeLocal(ACTIVE_SPAN);
       if (response instanceof HttpServerResponse) {
         HttpServerRequest httpReq = context.getLocal(ACTIVE_REQUEST);
-        context.removeLocal(ACTIVE_REQUEST);
         httpServerHandler.handleSend(httpReq, failure, span);
+      } else {
+        span.finish();
       }
+      context.removeLocal(ACTIVE_REQUEST);
     }
   }
 
   @Override
-  public <R> BiConsumer<Object, Throwable> sendRequest(Context context, TracingPolicy policy, R request, String operation, BiConsumer<String, String> headers, TagExtractor<R> tagExtractor) {
+  public <R> BiConsumer<Object, Throwable> sendRequest(Context context, SpanKind kind, TracingPolicy policy, R request, String operation, BiConsumer<String, String> headers, TagExtractor<R> tagExtractor) {
     if (policy == TracingPolicy.IGNORE) {
       return null;
     }
@@ -238,9 +262,11 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
         clientHandler.handleReceive((HttpResponse) resp, err, span);
       };
     } else {
-      span.kind(Span.Kind.CLIENT);
+      span.kind(kind == SpanKind.RPC ? Span.Kind.CLIENT : Span.Kind.PRODUCER);
       span.name(operation);
       reportTags(request, tagExtractor, span);
+      TraceContext.Injector<BiConsumer<String, String>> injector = tracing.propagation().injector(BiConsumer::accept);
+      injector.inject(span.context(), headers);
       return (resp, err) -> {
         if (err != null) {
           span.error(err);
@@ -269,6 +295,9 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
             int port = Integer.parseInt(matcher.group(2));
             span.remoteIpAndPort(host, port);
           }
+          break;
+        case "message_bus.destination":
+          span.remoteServiceName(value);
           break;
       }
     }

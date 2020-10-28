@@ -21,6 +21,7 @@ import io.opentracing.propagation.Format;
 import io.opentracing.propagation.TextMap;
 import io.opentracing.tag.Tags;
 import io.vertx.core.Context;
+import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.tracing.TracingPolicy;
 
@@ -59,6 +60,7 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
 
   @Override
   public <R> Span receiveRequest(Context context,
+                                 SpanKind kind,
                                  TracingPolicy policy,
                                  R request,
                                  String operation,
@@ -80,7 +82,7 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
         Span span = tracer.buildSpan(operation)
           .ignoreActiveSpan()
           .asChildOf(sc)
-          .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
+          .withTag(Tags.SPAN_KIND.getKey(), kind == SpanKind.RPC ? Tags.SPAN_KIND_SERVER : Tags.SPAN_KIND_CONSUMER)
           .withTag(Tags.COMPONENT.getKey(), "vertx")
           .start();
         reportTags(span, request, tagExtractor);
@@ -106,6 +108,7 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
 
   @Override
   public <R> Span sendRequest(Context context,
+                              SpanKind kind,
                               TracingPolicy policy,
                               R request,
                               String operation,
@@ -119,7 +122,7 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
       Span span = tracer
         .buildSpan(operation)
         .asChildOf(active)
-        .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT)
+        .withTag(Tags.SPAN_KIND.getKey(), kind == SpanKind.RPC ? Tags.SPAN_KIND_CLIENT : Tags.SPAN_KIND_PRODUCER)
         .withTag(Tags.COMPONENT.getKey(), "vertx")
         .start();
       reportTags(span, request, tagExtractor);
