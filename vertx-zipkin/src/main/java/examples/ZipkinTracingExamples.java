@@ -3,8 +3,12 @@ package examples;
 import brave.Tracing;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.docgen.Source;
 import io.vertx.tracing.zipkin.HttpSenderOptions;
 import io.vertx.tracing.zipkin.ZipkinTracingOptions;
@@ -46,6 +50,18 @@ public class ZipkinTracingExamples {
       .setTracingOptions(
         new ZipkinTracingOptions(tracing)
       )
+    );
+  }
+
+  public void ex5(Vertx vertx) {
+    HttpServer server = vertx.createHttpServer(new HttpServerOptions()
+      .setTracingPolicy(TracingPolicy.IGNORE)
+    );
+  }
+
+  public void ex6(Vertx vertx) {
+    HttpClient client = vertx.createHttpClient(new HttpClientOptions()
+      .setTracingPolicy(TracingPolicy.IGNORE)
     );
   }
 }
