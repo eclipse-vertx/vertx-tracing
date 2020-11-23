@@ -1,6 +1,6 @@
 = Tracing for Vert.x 4
 
-image:https://travis-ci.org/eclipse-vertx/vertx-tracing.svg?branch=master["Build Status",link="https://travis-ci.org/eclipse-vertx/vertx-tracing"]
+image:https://github.com/eclipse-vertx/vertx-tracing/workflows/CI/badge.svg?branch=master["Build Status", link="https://github.com/eclipse-vertx/vertx-tracing/actions?query=workflow%3ACI"]
 
 Provides integration with https://github.com/openzipkin/brave[Brave] and https://opentracing.io[OpenTracing]
 
