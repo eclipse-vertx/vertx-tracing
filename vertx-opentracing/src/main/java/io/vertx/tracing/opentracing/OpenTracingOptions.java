@@ -11,9 +11,11 @@
 package io.vertx.tracing.opentracing;
 
 import io.opentracing.Tracer;
+import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.tracing.TracingOptions;
 
+@DataObject
 public class OpenTracingOptions extends TracingOptions {
 
   private Tracer tracer;

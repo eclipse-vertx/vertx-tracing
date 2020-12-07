@@ -13,6 +13,7 @@ package io.vertx.tracing.zipkin;
 import brave.Tracing;
 import brave.http.HttpTracing;
 import brave.sampler.Sampler;
+import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.tracing.VertxTracer;
@@ -23,6 +24,7 @@ import zipkin2.reporter.Sender;
 import java.io.IOException;
 import java.util.Objects;
 
+@DataObject
 public class ZipkinTracingOptions extends TracingOptions {
 
   public static final String DEFAULT_SERVICE_NAME = "a-service";
@@ -88,7 +90,7 @@ public class ZipkinTracingOptions extends TracingOptions {
   /**
    * @return the sender options
    */
-  public HttpClientOptions getSenderOptions() {
+  public HttpSenderOptions getSenderOptions() {
     return senderOptions;
   }
 
