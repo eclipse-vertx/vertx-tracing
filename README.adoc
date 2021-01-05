@@ -1,10 +1,18 @@
 = Tracing for Vert.x 4
 
 image:https://github.com/eclipse-vertx/vertx-tracing/workflows/CI/badge.svg?branch=master["Build Status", link="https://github.com/eclipse-vertx/vertx-tracing/actions?query=workflow%3ACI"]
+image:https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg?style=flat["GitHub license",link="http://www.apache.org/licenses/LICENSE-2.0"]
 
-Provides integration with https://github.com/openzipkin/brave[Brave] and https://opentracing.io[OpenTracing]
+This is the repository for Vert.x tracing SPI implementations.
 
-= Todo
+== OpenTracing
 
-- CQs
-- examples + doc
+Provides integration https://opentracing.io[OpenTracing]
+
+- https://vertx.io/docs/vertx-opentracing/java/[website docs]
+
+== Zipkin Brave
+
+Provides integration with https://github.com/openzipkin/brave[Zipkin Brave]
+
+- https://vertx.io/docs/vertx-opentracing/java/[website docs]
