@@ -15,4 +15,4 @@ Provides integration https://opentracing.io[OpenTracing]
 
 Provides integration with https://github.com/openzipkin/brave[Zipkin Brave]
 
-- https://vertx.io/docs/vertx-opentracing/java/[website docs]
+- https://vertx.io/docs/vertx-zipkin/java/[website docs]
