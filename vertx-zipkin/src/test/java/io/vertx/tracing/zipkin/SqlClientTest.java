@@ -34,6 +34,7 @@ import java.net.InetAddress;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class SqlClientTest extends ZipkinBaseTest {
 
@@ -117,5 +118,7 @@ public class SqlClientTest extends ZipkinBaseTest {
     assertEquals(connectOptions.getHost(), span3.remoteEndpoint().ipv4());
     assertEquals(connectOptions.getPort(), span3.remoteEndpoint().portAsInt());
     assertEquals("SELECT $1 \"VAL\"", span3.tags().get("sql.query"));
+    assertNotEquals(0L, span3.durationAsLong());
+    assertNotEquals(0L, span3.timestampAsLong());
   }
 }
