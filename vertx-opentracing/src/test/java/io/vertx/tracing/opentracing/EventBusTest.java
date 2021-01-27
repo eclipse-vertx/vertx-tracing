@@ -81,7 +81,7 @@ public class EventBusTest {
                 if (!operationName.equals("GET")) {
                   count++;
                   ctx.assertEquals("send", operationName);
-                  ctx.assertEquals(ADDRESS, span.tags().get("peer.service"));
+                  ctx.assertEquals(ADDRESS, span.tags().get("message_bus.destination"));
                 }
               }
               ctx.assertEquals(expected, count);
@@ -131,7 +131,7 @@ public class EventBusTest {
                   if (!operationName.equals("GET")) {
                     count++;
                     ctx.assertEquals("publish", operationName);
-                    ctx.assertEquals(ADDRESS, span.tags().get("peer.service"));
+                    ctx.assertEquals(ADDRESS, span.tags().get("message_bus.destination"));
                   }
                 }
                 ctx.assertEquals(expected, count);
@@ -196,7 +196,7 @@ public class EventBusTest {
               if (!operationName.equals("GET")) {
                 count++;
                 ctx.assertEquals("send", operationName);
-                ctx.assertEquals(ADDRESS, span.tags().get("peer.service"));
+                ctx.assertEquals(ADDRESS, span.tags().get("message_bus.destination"));
               }
             }
             ctx.assertEquals(expected, count);
