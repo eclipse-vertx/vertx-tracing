@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2020 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2021 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -14,16 +14,12 @@ import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServer;
 import io.vertx.core.tracing.TracingPolicy;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import zipkin2.Span;
 import zipkin2.junit.ZipkinRule;
@@ -54,7 +50,11 @@ public abstract class ZipkinBaseTest {
         .setSupportsJoin(false)
         .setSenderOptions(new HttpSenderOptions().setSenderEndpoint(url))
     ));
-    client = vertx.createHttpClient(new HttpClientOptions().setTracingPolicy(TracingPolicy.ALWAYS));
+    client = vertx.createHttpClient(getHttpClientOptions());
+  }
+
+  protected HttpClientOptions getHttpClientOptions() {
+    return new HttpClientOptions().setTracingPolicy(TracingPolicy.ALWAYS);
   }
 
   @After
