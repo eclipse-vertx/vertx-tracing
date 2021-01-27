@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2020 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2021 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -33,6 +33,8 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.util.List;
 
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.*;
 
 public class SqlClientTest extends ZipkinBaseTest {
@@ -72,7 +74,7 @@ public class SqlClientTest extends ZipkinBaseTest {
   @Test
   public void testPreparedQuery(TestContext ctx) throws Exception {
     Async listenLatch = ctx.async();
-    long baseDurationInMs = 10000;
+    long baseDurationInMs = 500;
     vertx.createHttpServer().requestHandler(req -> {
       pool.preparedQuery("SELECT $1 \"VAL\"")
         .execute(Tuple.of("Hello World"))
@@ -114,13 +116,14 @@ public class SqlClientTest extends ZipkinBaseTest {
     assertEquals("get", span2.name());
     assertEquals("GET", span2.tags().get("http.method"));
     assertEquals("/", span2.tags().get("http.path"));
+    assertNotNull(span2.duration());
+    assertNotNull(span2.timestamp());
+    assertTrue(MILLISECONDS.convert(span2.durationAsLong(), MICROSECONDS) > baseDurationInMs);
     Span span3 = trace.get(2);
     assertEquals(Span.Kind.CLIENT, span3.kind());
     assertEquals("postgres", span3.remoteServiceName());
     assertEquals(connectOptions.getHost(), span3.remoteEndpoint().ipv4());
     assertEquals(connectOptions.getPort(), span3.remoteEndpoint().portAsInt());
     assertEquals("SELECT $1 \"VAL\"", span3.tags().get("sql.query"));
-    assertTrue(span3.durationAsLong() > baseDurationInMs);
-    assertTrue(span3.timestampAsLong() > 0);
   }
 }
