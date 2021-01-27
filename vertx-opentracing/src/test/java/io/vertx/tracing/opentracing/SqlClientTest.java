@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2020 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2021 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -27,17 +27,16 @@ import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Tuple;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.util.List;
 
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(VertxUnitRunner.class)
 public class SqlClientTest {
@@ -98,19 +97,22 @@ public class SqlClientTest {
   @Test
   public void testPreparedQuery(TestContext ctx) throws Exception {
     Async listenLatch = ctx.async();
+    long baseDurationInMs = 500;
     vertx.createHttpServer().requestHandler(req -> {
       pool.preparedQuery("SELECT $1 \"VAL\"")
         .execute(Tuple.of("Hello World"))
         .onComplete(ar -> {
-          if (ar.succeeded()) {
-            RowSet<Row> rows = ar.result();
-            req.response()
-              .end();
-          } else {
-            req.response()
-              .setStatusCode(500)
-              .end();
-          }
+          vertx.setTimer(baseDurationInMs, (__) -> {
+            if (ar.succeeded()) {
+              RowSet<Row> rows = ar.result();
+              req.response()
+                .end();
+            } else {
+              req.response()
+                .setStatusCode(500)
+                .end();
+            }
+          });
         });
     }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.complete()));
     listenLatch.awaitSuccess();
@@ -124,12 +126,13 @@ public class SqlClientTest {
     }));
     responseLatch.awaitSuccess();
     List<MockSpan> spans = waitUntil(3);
-    MockSpan requestSpan = spans.get(0);
+    MockSpan requestSpan = spans.get(1);
     assertEquals("GET", requestSpan.operationName());
     assertEquals("GET", requestSpan.tags().get("http.method"));
     assertEquals("http://localhost:8080/", requestSpan.tags().get("http.url"));
     assertEquals("200", requestSpan.tags().get("http.status_code"));
-    MockSpan querySpan = spans.get(1);
+    assertTrue(MILLISECONDS.convert(requestSpan.finishMicros() - requestSpan.startMicros(), MICROSECONDS) > baseDurationInMs);
+    MockSpan querySpan = spans.get(0);
     assertEquals("Query", querySpan.operationName());
     assertEquals("client", querySpan.tags().get("span.kind"));
     assertEquals("SELECT $1 \"VAL\"", querySpan.tags().get("db.statement"));
