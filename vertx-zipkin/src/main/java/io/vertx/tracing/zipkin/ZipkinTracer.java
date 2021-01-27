@@ -198,6 +198,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
         span = tracing.tracer().joinSpan(extracted.context());
       } else if (policy == TracingPolicy.ALWAYS) {
         span = tracing.tracer().newTrace();
+        span.start();
       } else {
         return null;
       }
@@ -239,6 +240,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       span = tracing.tracer().newTrace();
     } else {
       span = tracing.tracer().newChild(activeCtx);
+      span.start();
     }
     if (request instanceof HttpRequest) {
       HttpRequest httpRequest = (HttpRequest) request;

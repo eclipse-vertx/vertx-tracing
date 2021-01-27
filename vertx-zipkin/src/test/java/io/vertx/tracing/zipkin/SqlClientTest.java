@@ -33,7 +33,7 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class SqlClientTest extends ZipkinBaseTest {
 
@@ -72,19 +72,22 @@ public class SqlClientTest extends ZipkinBaseTest {
   @Test
   public void testPreparedQuery(TestContext ctx) throws Exception {
     Async listenLatch = ctx.async();
+    long baseDurationInMs = 10000;
     vertx.createHttpServer().requestHandler(req -> {
       pool.preparedQuery("SELECT $1 \"VAL\"")
         .execute(Tuple.of("Hello World"))
         .onComplete(ar -> {
-          if (ar.succeeded()) {
-            RowSet<Row> rows = ar.result();
-            req.response()
-              .end();
-          } else {
-            req.response()
-              .setStatusCode(500)
-              .end();
-          }
+          vertx.setTimer(baseDurationInMs, (__) -> {
+            if (ar.succeeded()) {
+              RowSet<Row> rows = ar.result();
+              req.response()
+                .end();
+            } else {
+              req.response()
+                .setStatusCode(500)
+                .end();
+            }
+          });
         });
     }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.complete()));
     listenLatch.awaitSuccess();
@@ -117,5 +120,7 @@ public class SqlClientTest extends ZipkinBaseTest {
     assertEquals(connectOptions.getHost(), span3.remoteEndpoint().ipv4());
     assertEquals(connectOptions.getPort(), span3.remoteEndpoint().portAsInt());
     assertEquals("SELECT $1 \"VAL\"", span3.tags().get("sql.query"));
+    assertTrue(span3.durationAsLong() > baseDurationInMs);
+    assertTrue(span3.timestampAsLong() > 0);
   }
 }
