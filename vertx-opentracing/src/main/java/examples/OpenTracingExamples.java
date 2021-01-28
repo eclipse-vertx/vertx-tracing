@@ -1,5 +1,6 @@
 package examples;
 
+import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -11,6 +12,7 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.docgen.Source;
 import io.vertx.tracing.opentracing.OpenTracingOptions;
+import io.vertx.tracing.opentracing.OpenTracingUtil;
 
 @Source
 public class OpenTracingExamples {
@@ -43,7 +45,16 @@ public class OpenTracingExamples {
     );
   }
 
-  public void ex5(Vertx vertx) {
+  public void ex5(Tracer tracer) {
+    Span span = tracer.buildSpan("my-operation")
+      .withTag("some-key", "some-value")
+      .start();
+    OpenTracingUtil.setSpan(span);
+    // Do something, e.g. client request
+    span.finish();
+  }
+
+  public void ex6(Vertx vertx) {
     DeliveryOptions options = new DeliveryOptions().setTracingPolicy(TracingPolicy.ALWAYS);
     vertx.eventBus().send("the-address", "foo", options);
   }

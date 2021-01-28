@@ -52,6 +52,17 @@ The default HTTP client tracing policy is `PROPAGATE`, you can configure the pol
 {@link examples.OpenTracingExamples#ex4}
 ----
 
+To initiate a trace for a client call, you need to create it first and make Vert.x
+aware of it by using `OpenTracingUtil.setSpan`:
+
+[source,$lang]
+----
+{@link examples.OpenTracingExamples#ex5}
+----
+
+In an HTTP scenario between two Vert.x services, a span will be created client-side, then
+the trace context will be propagated server-side and another span will be added to the trace.
+
 == EventBus tracing
 
 The Vert.x EventBus reports spans around message exchanges.
@@ -60,5 +71,5 @@ The default sending policy is `PROPAGATE`, you can configure the policy with {@l
 
 [source,$lang]
 ----
-{@link examples.OpenTracingExamples#ex5}
+{@link examples.OpenTracingExamples#ex6}
 ----
