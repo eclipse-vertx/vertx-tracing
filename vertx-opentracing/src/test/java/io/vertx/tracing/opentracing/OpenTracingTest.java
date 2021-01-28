@@ -226,6 +226,6 @@ public class OpenTracingTest {
     assertSingleSpan(spans);
     MockSpan span = spans.get(0);
     assertEquals("send", span.operationName());
-    assertEquals("the-address", span.tags().get("peer.service"));
+    assertEquals("the-address", span.tags().get("message_bus.destination"));
   }
 }

@@ -51,3 +51,14 @@ The default HTTP client tracing policy is `PROPAGATE`, you can configure the pol
 ----
 {@link examples.OpenTracingExamples#ex4}
 ----
+
+== EventBus tracing
+
+The Vert.x EventBus reports spans around message exchanges.
+
+The default sending policy is `PROPAGATE`, you can configure the policy with {@link io.vertx.core.eventbus.DeliveryOptions#setTracingPolicy}.
+
+[source,$lang]
+----
+{@link examples.OpenTracingExamples#ex5}
+----

@@ -3,6 +3,7 @@ package examples;
 import io.opentracing.Tracer;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpServer;
@@ -40,5 +41,10 @@ public class OpenTracingExamples {
     HttpClient client = vertx.createHttpClient(new HttpClientOptions()
       .setTracingPolicy(TracingPolicy.IGNORE)
     );
+  }
+
+  public void ex5(Vertx vertx) {
+    DeliveryOptions options = new DeliveryOptions().setTracingPolicy(TracingPolicy.ALWAYS);
+    vertx.eventBus().send("the-address", "foo", options);
   }
 }
