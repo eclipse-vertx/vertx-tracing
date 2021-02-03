@@ -33,7 +33,6 @@
   </properties>
 
   <dependencies>
-
     <dependency>
       <groupId>io.zipkin.brave</groupId>
       <artifactId>brave</artifactId>
@@ -43,6 +42,18 @@
       <groupId>io.zipkin.brave</groupId>
       <artifactId>brave-instrumentation-http</artifactId>
       <version>${zipkin.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-unit</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.zipkin.zipkin2</groupId>
