@@ -84,7 +84,7 @@ public class OpenTelemetryTracer implements VertxTracer<Span, Span> {
     final Throwable failure,
     final TagExtractor<R> tagExtractor) {
 
-    context.removeLocal(ACTIVE_SPAN);
+    OpenTelemetryUtil.clearContext();
 
     if (span == null) {
       return;

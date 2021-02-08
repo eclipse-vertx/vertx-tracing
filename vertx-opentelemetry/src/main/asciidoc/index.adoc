@@ -1,9 +1,6 @@
-= Vertx OpenTracing
+= Vertx OpenTelemetry
 
-Vert.x integrates with OpenTracing thanks to the Jaeger client.
-
-You can configure Vert.x to use the Jaeger client configured via
-https://github.com/jaegertracing/jaeger-client-java/blob/master/jaeger-core/README.md#configuration-via-environment[Environment]
+Vert.x integrates with OpenTelemetry thanks to the Jaeger client.
 
 [source,$lang]
 ----
@@ -32,11 +29,11 @@ The tracing policy is usually configured in the component options.
 
 The Vert.x HTTP server and client reports span around HTTP requests:
 
-- `operationName`: the HTTP method
+- `name`: the HTTP method
 - tags
   - `http.method`: the HTTP method
   - `http.url`: the request URL
-  - `http.status_code`: the HTTP status code
+  - `http.status_code`: the HTTP status code (as `String`)
 
 The default HTTP server tracing policy is `ALWAYS`, you can configure the policy with {@link io.vertx.core.http.HttpServerOptions#setTracingPolicy}
 
@@ -53,7 +50,7 @@ The default HTTP client tracing policy is `PROPAGATE`, you can configure the pol
 ----
 
 To initiate a trace for a client call, you need to create it first and make Vert.x
-aware of it by using `OpenTracingUtil.setSpan`:
+aware of it by using `OpenTelemetryUtil.setSpan`:
 
 [source,$lang]
 ----
