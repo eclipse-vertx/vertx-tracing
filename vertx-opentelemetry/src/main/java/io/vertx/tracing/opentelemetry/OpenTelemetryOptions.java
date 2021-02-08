@@ -10,9 +10,11 @@
  */
 package io.vertx.tracing.opentelemetry;
 
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.spi.tracing.VertxTracer;
 import io.vertx.core.tracing.TracingOptions;
 
 @DataObject
@@ -31,7 +33,7 @@ public class OpenTelemetryOptions extends TracingOptions {
     super(json);
   }
 
-  io.vertx.core.spi.tracing.VertxTracer<?, ?> buildTracer() {
+  VertxTracer<Span, Span> buildTracer() {
     if (tracer != null) {
       return new OpenTelemetryTracer(tracer);
     } else {

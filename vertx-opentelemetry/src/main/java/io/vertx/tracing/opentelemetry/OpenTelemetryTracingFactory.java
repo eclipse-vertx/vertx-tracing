@@ -18,18 +18,24 @@ import io.vertx.core.tracing.TracingOptions;
 
 public class OpenTelemetryTracingFactory implements VertxTracerFactory {
 
-  private final io.opentelemetry.api.trace.Tracer tracer;
+  private final Tracer tracer;
 
   public OpenTelemetryTracingFactory() {
     this.tracer = Tracer.getDefault();
   }
 
-  public OpenTelemetryTracingFactory(final io.opentelemetry.api.trace.Tracer tracer) {
+  public OpenTelemetryTracingFactory(final Tracer tracer) {
     this.tracer = tracer;
   }
 
   @Override
   public VertxTracer<Span, Span> tracer(final TracingOptions options) {
-    return new OpenTelemetryTracer(this.tracer);
+    OpenTelemetryOptions openTelemetryOptions;
+    if (options instanceof OpenTelemetryOptions) {
+      openTelemetryOptions = (OpenTelemetryOptions) options;
+    } else {
+      openTelemetryOptions = new OpenTelemetryOptions();
+    }
+    return openTelemetryOptions.buildTracer();
   }
 }

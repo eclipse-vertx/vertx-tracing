@@ -82,7 +82,8 @@ public class EventBusTest {
             ctx.verify(() -> {
               int count = 0;
               for (SpanData data : otelTesting.getSpans()) {
-                String operationName = data.getAttributes().get(AttributeKey.stringKey("operation"));
+                String operationName = data.getName();
+                assertThat(operationName).isNotNull();
                 if (!operationName.equals("GET")) {
                   count++;
                   assertThat(operationName)
@@ -144,7 +145,8 @@ public class EventBusTest {
                 ctx.verify(() -> {
                   int count = 0;
                   for (SpanData data : otelTesting.getSpans()) {
-                    String operationName = data.getAttributes().get(AttributeKey.stringKey("operation"));
+                    String operationName = data.getName();
+                    assertThat(operationName).isNotNull();
                     if (!operationName.equals("GET")) {
                       count++;
                       assertThat(operationName)
@@ -213,7 +215,8 @@ public class EventBusTest {
               assertThat(resp.statusCode()).isEqualTo(200);
               int count = 0;
               for (SpanData data : otelTesting.getSpans()) {
-                String operationName = data.getAttributes().get(AttributeKey.stringKey("operation"));
+                String operationName = data.getName();
+                assertThat(operationName).isNotNull();
                 if (!operationName.equals("GET")) {
                   count++;
                   assertThat(operationName)

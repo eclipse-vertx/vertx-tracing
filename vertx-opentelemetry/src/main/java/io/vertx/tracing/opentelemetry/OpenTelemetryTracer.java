@@ -84,6 +84,8 @@ public class OpenTelemetryTracer implements VertxTracer<Span, Span> {
     final Throwable failure,
     final TagExtractor<R> tagExtractor) {
 
+    context.removeLocal(ACTIVE_SPAN);
+
     if (span == null) {
       return;
     }
@@ -116,6 +118,7 @@ public class OpenTelemetryTracer implements VertxTracer<Span, Span> {
     final Kind spanKind = SpanKind.RPC.equals(kind) ? Kind.CLIENT : Kind.PRODUCER;
 
     final io.opentelemetry.context.Context tracingContext = context.getLocal(ACTIVE_CONTEXT);
+
     if (tracingContext == null) {
 
       if (TracingPolicy.ALWAYS.equals(policy)) {
@@ -126,7 +129,7 @@ public class OpenTelemetryTracer implements VertxTracer<Span, Span> {
 
         tagExtractor.extractTo(request, span::setAttribute);
 
-        W3CTraceContextPropagator.getInstance().inject(current(), headers, setter);
+        W3CTraceContextPropagator.getInstance().inject(current().with(span), headers, setter);
 
         return span;
       }
