@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2020 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2021 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -43,9 +43,7 @@ public class HeadersPropagatorGetterTest {
       new SimpleImmutableEntry<>("b", "1")
     );
 
-    final String get = getter.get(carrier, "c");
-
-    assertThat(get).isNull();
+    assertThat(getter.get(carrier, "c")).isNull();
   }
 
   @Test
@@ -58,17 +56,13 @@ public class HeadersPropagatorGetterTest {
       new SimpleImmutableEntry<>("b", "2")
     );
 
-    final String get = getter.get(carrier, "A");
-
-    assertThat(get).isEqualTo("1");
+    assertThat(getter.get(carrier, "A")).isEqualTo("1");
   }
 
   @Test
   public void shouldReturnNullWhenCarrierIsNull() {
     final HeadersPropagatorGetter getter = new HeadersPropagatorGetter();
 
-    assertThat(
-      getter.get(null, "A")
-    ).isNull();
+    assertThat(getter.get(null, "A")).isNull();
   }
 }
