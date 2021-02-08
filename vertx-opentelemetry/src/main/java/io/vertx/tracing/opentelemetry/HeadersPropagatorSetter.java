@@ -14,7 +14,7 @@ import io.opentelemetry.context.propagation.TextMapPropagator.Setter;
 
 import java.util.function.BiConsumer;
 
-public class HeadersPropagatorSetter implements Setter<BiConsumer<String, String>> {
+final class HeadersPropagatorSetter implements Setter<BiConsumer<String, String>> {
 
   @Override
   public void set(final BiConsumer<String, String> carrier, final String key, final String value) {

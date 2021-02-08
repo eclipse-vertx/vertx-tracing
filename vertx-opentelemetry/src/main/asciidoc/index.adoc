@@ -1,6 +1,6 @@
 = Vertx OpenTelemetry
 
-Vert.x integrates with OpenTelemetry thanks to the Jaeger client.
+Vert.x integration with OpenTelemetry.
 
 [source,$lang]
 ----
