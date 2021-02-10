@@ -23,6 +23,8 @@ import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.RequestOptions;
+import io.vertx.core.spi.VertxTracerFactory;
+import io.vertx.core.tracing.TracingOptions;
 import zipkin2.Call;
 import zipkin2.Callback;
 import zipkin2.codec.Encoding;
@@ -52,7 +54,7 @@ public class VertxSender extends Sender {
 
   public VertxSender(HttpSenderOptions options) {
     this.endpoint = options.getSenderEndpoint();
-    this.vertx = Vertx.vertx(new VertxOptions().setTracingOptions(null));
+    this.vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new TracingOptions().setFactory(VertxTracerFactory.NOOP)));
     this.client = vertx.createHttpClient(options);
   }
 
