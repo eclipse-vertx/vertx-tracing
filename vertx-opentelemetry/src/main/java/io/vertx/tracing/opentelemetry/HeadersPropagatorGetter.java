@@ -10,13 +10,13 @@
  */
 package io.vertx.tracing.opentelemetry;
 
-import io.opentelemetry.context.propagation.TextMapPropagator;
+import io.opentelemetry.context.propagation.TextMapGetter;
 
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-final class HeadersPropagatorGetter implements TextMapPropagator.Getter<Iterable<Entry<String, String>>> {
+final class HeadersPropagatorGetter implements TextMapGetter<Iterable<Entry<String, String>>> {
 
   @Override
   public Iterable<String> keys(final Iterable<Entry<String, String>> carrier) {

@@ -12,6 +12,7 @@ package io.vertx.tracing.opentelemetry;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.TracerProvider;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.tracing.VertxTracer;
@@ -37,7 +38,7 @@ public class OpenTelemetryOptions extends TracingOptions {
     if (tracer != null) {
       return new OpenTelemetryTracer(tracer);
     } else {
-      return new OpenTelemetryTracer(Tracer.getDefault());
+      return new OpenTelemetryTracer(TracerProvider.noop().get("noop"));
     }
   }
 

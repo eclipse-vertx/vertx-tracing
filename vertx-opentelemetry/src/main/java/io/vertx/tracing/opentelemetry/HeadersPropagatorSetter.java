@@ -10,11 +10,11 @@
  */
 package io.vertx.tracing.opentelemetry;
 
-import io.opentelemetry.context.propagation.TextMapPropagator.Setter;
+import io.opentelemetry.context.propagation.TextMapSetter;
 
 import java.util.function.BiConsumer;
 
-final class HeadersPropagatorSetter implements Setter<BiConsumer<String, String>> {
+final class HeadersPropagatorSetter implements TextMapSetter<BiConsumer<String, String>> {
 
   @Override
   public void set(final BiConsumer<String, String> carrier, final String key, final String value) {

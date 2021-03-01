@@ -31,7 +31,7 @@
 
   <properties>
     <doc.skip>false</doc.skip>
-    <opentelemetry.version>0.15.0</opentelemetry.version>
+    <opentelemetry.version>1.0.0</opentelemetry.version>
     <assertj.version>3.18.1</assertj.version>
     <junit.jupiter.version>5.7.0</junit.jupiter.version>
     <mokito.junit.jupiter.version>3.6.28</mokito.junit.jupiter.version>

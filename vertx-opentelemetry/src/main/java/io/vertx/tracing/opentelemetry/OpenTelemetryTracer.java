@@ -11,11 +11,10 @@
 package io.vertx.tracing.opentelemetry;
 
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Span.Kind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
-import io.opentelemetry.context.propagation.TextMapPropagator.Getter;
-import io.opentelemetry.context.propagation.TextMapPropagator.Setter;
+import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.context.propagation.TextMapSetter;
 import io.vertx.core.Context;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
@@ -31,8 +30,8 @@ import static io.vertx.tracing.opentelemetry.OpenTelemetryUtil.ACTIVE_SPAN;
 
 public class OpenTelemetryTracer implements VertxTracer<Span, Span> {
 
-  private static final Getter<Iterable<Entry<String, String>>> getter = new HeadersPropagatorGetter();
-  private static final Setter<BiConsumer<String, String>> setter = new HeadersPropagatorSetter();
+  private static final TextMapGetter<Iterable<Entry<String, String>>> getter = new HeadersPropagatorGetter();
+  private static final TextMapSetter<BiConsumer<String, String>> setter = new HeadersPropagatorSetter();
 
   private final Tracer tracer;
 
@@ -65,7 +64,7 @@ public class OpenTelemetryTracer implements VertxTracer<Span, Span> {
 
     final Span span = tracer.spanBuilder(operation)
       .setParent(tracingContext)
-      .setSpanKind(SpanKind.RPC.equals(kind) ? Kind.SERVER : Kind.CONSUMER)
+      .setSpanKind(SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.SERVER : io.opentelemetry.api.trace.SpanKind.CONSUMER)
       .startSpan();
 
     tagExtractor.extractTo(request, span::setAttribute);
@@ -115,7 +114,7 @@ public class OpenTelemetryTracer implements VertxTracer<Span, Span> {
       return null;
     }
 
-    final Kind spanKind = SpanKind.RPC.equals(kind) ? Kind.CLIENT : Kind.PRODUCER;
+    final io.opentelemetry.api.trace.SpanKind spanKind = SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.CLIENT : io.opentelemetry.api.trace.SpanKind.PRODUCER;
 
     final io.opentelemetry.context.Context tracingContext = context.getLocal(ACTIVE_CONTEXT);
 

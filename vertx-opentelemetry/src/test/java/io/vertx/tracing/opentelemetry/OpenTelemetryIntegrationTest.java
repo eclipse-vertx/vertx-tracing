@@ -12,9 +12,11 @@ package io.vertx.tracing.opentelemetry;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapPropagator;
+import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.vertx.core.Vertx;
@@ -55,7 +57,7 @@ public class OpenTelemetryIntegrationTest {
   private Vertx vertx;
   private TextMapPropagator textMapPropagator;
 
-  private final static TextMapPropagator.Setter<HttpURLConnection> setter = HttpURLConnection::setRequestProperty;
+  private final static TextMapSetter<HttpURLConnection> setter = HttpURLConnection::setRequestProperty;
 
   @BeforeEach
   public void setUp() throws Exception {
@@ -196,7 +198,7 @@ public class OpenTelemetryIntegrationTest {
     URL url = new URL("http://localhost:8080");
 
     Span span = tracer.spanBuilder("/")
-      .setSpanKind(Span.Kind.CLIENT)
+      .setSpanKind(SpanKind.CLIENT)
       .setAttribute("component", "vertx")
       .startSpan();
     try (Scope scope = span.makeCurrent()) {
