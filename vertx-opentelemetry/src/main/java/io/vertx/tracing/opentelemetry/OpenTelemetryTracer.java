@@ -10,9 +10,10 @@
  */
 package io.vertx.tracing.opentelemetry;
 
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.vertx.core.Context;
@@ -28,15 +29,17 @@ import static io.opentelemetry.context.Context.current;
 import static io.vertx.tracing.opentelemetry.OpenTelemetryUtil.ACTIVE_CONTEXT;
 import static io.vertx.tracing.opentelemetry.OpenTelemetryUtil.ACTIVE_SPAN;
 
-public class OpenTelemetryTracer implements VertxTracer<Span, Span> {
+class OpenTelemetryTracer implements VertxTracer<Span, Span> {
 
   private static final TextMapGetter<Iterable<Entry<String, String>>> getter = new HeadersPropagatorGetter();
   private static final TextMapSetter<BiConsumer<String, String>> setter = new HeadersPropagatorSetter();
 
   private final Tracer tracer;
+  private final ContextPropagators propagators;
 
-  OpenTelemetryTracer(final Tracer tracer) {
-    this.tracer = tracer;
+  OpenTelemetryTracer(final OpenTelemetry openTelemetry) {
+    this.tracer = openTelemetry.getTracer("io.vertx");
+    this.propagators = openTelemetry.getPropagators();
   }
 
   @Override
@@ -54,7 +57,7 @@ public class OpenTelemetryTracer implements VertxTracer<Span, Span> {
     }
 
     final io.opentelemetry.context.Context parentContext = current();
-    final io.opentelemetry.context.Context tracingContext = W3CTraceContextPropagator.getInstance().extract(parentContext, headers, getter);
+    final io.opentelemetry.context.Context tracingContext = propagators.getTextMapPropagator().extract(parentContext, headers, getter);
 
     // OpenTelemetry SDK's Context is immutable, therefore if the extracted context is the same as the parent context
     // there is no tracing data to propagate downstream and we can return null.
@@ -128,7 +131,7 @@ public class OpenTelemetryTracer implements VertxTracer<Span, Span> {
 
         tagExtractor.extractTo(request, span::setAttribute);
 
-        W3CTraceContextPropagator.getInstance().inject(current().with(span), headers, setter);
+        propagators.getTextMapPropagator().inject(current().with(span), headers, setter);
 
         return span;
       }
@@ -143,7 +146,7 @@ public class OpenTelemetryTracer implements VertxTracer<Span, Span> {
 
     tagExtractor.extractTo(request, span::setAttribute);
 
-    W3CTraceContextPropagator.getInstance().inject(tracingContext.with(span), headers, setter);
+    propagators.getTextMapPropagator().inject(tracingContext.with(span), headers, setter);
 
     return span;
   }

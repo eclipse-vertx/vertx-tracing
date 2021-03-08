@@ -10,23 +10,18 @@
  */
 package io.vertx.tracing.opentelemetry;
 
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.api.trace.TracerProvider;
 import io.vertx.core.spi.VertxTracerFactory;
 import io.vertx.core.spi.tracing.VertxTracer;
 import io.vertx.core.tracing.TracingOptions;
 
 public class OpenTelemetryTracingFactory implements VertxTracerFactory {
 
-  private final Tracer tracer;
-
   public OpenTelemetryTracingFactory() {
-    this.tracer = TracerProvider.noop().get("noop");
   }
 
-  public OpenTelemetryTracingFactory(final Tracer tracer) {
-    this.tracer = tracer;
+  public OpenTelemetryTracingFactory(final OpenTelemetry openTelemetry) {
   }
 
   @Override

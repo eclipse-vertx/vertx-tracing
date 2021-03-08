@@ -7,7 +7,7 @@ Vert.x integration with OpenTelemetry.
 {@link examples.OpenTelemetryExamples#ex1}
 ----
 
-You can also pass a custom `Tracer` allowing for greater control
+You can also pass a custom `OpenTelemetry` allowing for greater control
 over the configuration.
 
 [source,$lang]

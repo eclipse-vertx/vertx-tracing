@@ -13,7 +13,6 @@ package io.vertx.tracing.opentelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
@@ -53,7 +52,6 @@ public class OpenTelemetryIntegrationTest {
 
   @RegisterExtension
   final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
-  private Tracer tracer;
   private Vertx vertx;
   private TextMapPropagator textMapPropagator;
 
@@ -61,8 +59,7 @@ public class OpenTelemetryIntegrationTest {
 
   @BeforeEach
   public void setUp() throws Exception {
-    tracer = otelTesting.getOpenTelemetry().getTracer("testing");
-    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new OpenTelemetryOptions(tracer)));
+    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new OpenTelemetryOptions(otelTesting.getOpenTelemetry())));
     textMapPropagator = otelTesting.getOpenTelemetry().getPropagators().getTextMapPropagator();
   }
 
@@ -197,7 +194,7 @@ public class OpenTelemetryIntegrationTest {
   private void sendRequestWithTrace() throws IOException {
     URL url = new URL("http://localhost:8080");
 
-    Span span = tracer.spanBuilder("/")
+    Span span = otelTesting.getOpenTelemetry().getTracer("io.vertx").spanBuilder("/")
       .setSpanKind(SpanKind.CLIENT)
       .setAttribute("component", "vertx")
       .startSpan();

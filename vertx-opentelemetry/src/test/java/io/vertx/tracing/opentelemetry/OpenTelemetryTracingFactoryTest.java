@@ -10,8 +10,8 @@
  */
 package io.vertx.tracing.opentelemetry;
 
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.TracerProvider;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.spi.tracing.SpanKind;
@@ -38,7 +38,7 @@ public class OpenTelemetryTracingFactoryTest {
   @Test
   public void receiveRequestShouldNotReturnSpanIfPolicyIsIgnore(final Vertx vertx) {
 
-    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(TracerProvider.noop().get("noop"));
+    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(OpenTelemetry.noop());
     final VertxTracer<Span, Span> tracer = f.tracer(null);
 
     final Span span = tracer.receiveRequest(
@@ -57,7 +57,7 @@ public class OpenTelemetryTracingFactoryTest {
   @Test
   public void receiveRequestShouldNotReturnSpanIfPolicyIsPropagateAndPreviousContextIsNotPresent(final Vertx vertx) {
 
-    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(TracerProvider.noop().get("noop"));
+    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(OpenTelemetry.noop());
     final VertxTracer<Span, Span> tracer = f.tracer(null);
 
     final Span span = tracer.receiveRequest(
@@ -76,7 +76,7 @@ public class OpenTelemetryTracingFactoryTest {
   @Test
   public void receiveRequestShouldReturnSpanIfPolicyIsPropagateAndPreviousContextIsPresent(final Vertx vertx) {
 
-    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(TracerProvider.noop().get("noop"));
+    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(OpenTelemetry.noop());
     final VertxTracer<Span, Span> tracer = f.tracer(null);
 
     final Iterable<Map.Entry<String, String>> headers = Collections.singletonList(
@@ -103,7 +103,7 @@ public class OpenTelemetryTracingFactoryTest {
   @Test
   public void sendResponseEndsSpan(final Vertx vertx) {
 
-    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(TracerProvider.noop().get("noop"));
+    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(OpenTelemetry.noop());
     final VertxTracer<Span, Span> tracer = f.tracer(null);
 
     final Span span = mock(Span.class);
@@ -123,7 +123,7 @@ public class OpenTelemetryTracingFactoryTest {
   @Test
   public void sendResponseShouldNotThrowExceptionWhenSpanIsNull(final Vertx vertx) {
 
-    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(TracerProvider.noop().get("noop"));
+    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(OpenTelemetry.noop());
     final VertxTracer<Span, Span> tracer = f.tracer(null);
 
     assertThatNoException().isThrownBy(() -> tracer.sendResponse(
@@ -138,7 +138,7 @@ public class OpenTelemetryTracingFactoryTest {
   @Test
   public void sendRequestShouldNotReturnSpanIfRequestIsNull(final Vertx vertx) {
 
-    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(TracerProvider.noop().get("noop"));
+    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(OpenTelemetry.noop());
     final VertxTracer<Span, Span> tracer = f.tracer(null);
 
     final Context ctx = vertx.getOrCreateContext();
@@ -161,7 +161,7 @@ public class OpenTelemetryTracingFactoryTest {
   @Test
   public void sendRequestShouldNotReturnSpanIfPolicyIsIgnore(final Vertx vertx) {
 
-    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(TracerProvider.noop().get("noop"));
+    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(OpenTelemetry.noop());
     final VertxTracer<Span, Span> tracer = f.tracer(null);
 
     final Context ctx = vertx.getOrCreateContext();
@@ -185,7 +185,7 @@ public class OpenTelemetryTracingFactoryTest {
   @Test
   public void sendRequestShouldNotReturnSpanIfPolicyIsPropagateAndPreviousContextIsNotPresent(final Vertx vertx) {
 
-    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(TracerProvider.noop().get("noop"));
+    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(OpenTelemetry.noop());
     final VertxTracer<Span, Span> tracer = f.tracer(null);
 
     final Span span = tracer.sendRequest(
@@ -205,7 +205,7 @@ public class OpenTelemetryTracingFactoryTest {
   @Test
   public void sendRequestShouldReturnSpanIfPolicyIsPropagateAndPreviousContextIsPresent(final Vertx vertx) {
 
-    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(TracerProvider.noop().get("noop"));
+    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(OpenTelemetry.noop());
     final VertxTracer<Span, Span> tracer = f.tracer(null);
 
     final Context ctx = vertx.getOrCreateContext();
@@ -228,7 +228,7 @@ public class OpenTelemetryTracingFactoryTest {
   @Test
   public void sendRequestShouldReturnSpanIfPolicyIsAlwaysAndPreviousContextIsNotPresent(final Vertx vertx) {
 
-    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(TracerProvider.noop().get("noop"));
+    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(OpenTelemetry.noop());
     final VertxTracer<Span, Span> tracer = f.tracer(null);
 
     final Context ctx = vertx.getOrCreateContext();
@@ -250,7 +250,7 @@ public class OpenTelemetryTracingFactoryTest {
   @Test
   public void receiveResponseEndsSpan(final Vertx vertx) {
 
-    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(TracerProvider.noop().get("noop"));
+    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(OpenTelemetry.noop());
     final VertxTracer<Span, Span> tracer = f.tracer(null);
 
     final Span span = mock(Span.class);
@@ -270,7 +270,7 @@ public class OpenTelemetryTracingFactoryTest {
   @Test
   public void receiveResponseShouldNotThrowExceptionWhenSpanIsNull(final Vertx vertx) {
 
-    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(TracerProvider.noop().get("noop"));
+    final OpenTelemetryTracingFactory f = new OpenTelemetryTracingFactory(OpenTelemetry.noop());
     final VertxTracer<Span, Span> tracer = f.tracer(null);
 
     assertThatNoException().isThrownBy(() -> tracer.receiveResponse(

@@ -12,17 +12,19 @@ package io.vertx.tracing.opentelemetry;
 
 import io.opentelemetry.context.propagation.TextMapGetter;
 
+import java.util.HashSet;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.Set;
 
 final class HeadersPropagatorGetter implements TextMapGetter<Iterable<Entry<String, String>>> {
 
   @Override
   public Iterable<String> keys(final Iterable<Entry<String, String>> carrier) {
-    return StreamSupport.stream(carrier.spliterator(), false)
-      .map(Entry::getKey)
-      .collect(Collectors.toSet());
+    Set<String> keys = new HashSet<>();
+    for (Entry<String, String> entry : carrier) {
+      keys.add(entry.getKey());
+    }
+    return keys;
   }
 
   @Override
@@ -30,10 +32,11 @@ final class HeadersPropagatorGetter implements TextMapGetter<Iterable<Entry<Stri
     if (carrier == null) {
       return null;
     }
-    return StreamSupport.stream(carrier.spliterator(), false)
-      .filter(e -> e.getKey().equalsIgnoreCase(key))
-      .findFirst()
-      .map(Entry::getValue)
-      .orElse(null);
+    for (Entry<String, String> entry : carrier) {
+      if (entry.getKey().equalsIgnoreCase(key)) {
+        return entry.getValue();
+      }
+    }
+    return null;
   }
 }

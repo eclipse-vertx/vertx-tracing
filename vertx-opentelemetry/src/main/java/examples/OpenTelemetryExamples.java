@@ -1,5 +1,6 @@
 package examples;
 
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.vertx.core.Vertx;
@@ -25,10 +26,10 @@ public class OpenTelemetryExamples {
     );
   }
 
-  public void ex2(Tracer tracer) {
+  public void ex2(OpenTelemetry openTelemetry) {
     Vertx vertx = Vertx.vertx(new VertxOptions()
       .setTracingOptions(
-        new OpenTelemetryOptions(tracer)
+        new OpenTelemetryOptions(openTelemetry)
       )
     );
   }

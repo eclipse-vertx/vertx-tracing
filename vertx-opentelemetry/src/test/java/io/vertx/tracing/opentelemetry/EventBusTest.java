@@ -12,7 +12,6 @@
 package io.vertx.tracing.opentelemetry;
 
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.vertx.core.*;
@@ -38,14 +37,12 @@ public class EventBusTest {
 
   @RegisterExtension
   final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
-  private Tracer tracer;
   private Vertx vertx;
   private HttpClient client;
 
   @BeforeEach
   public void setUp() throws Exception {
-    tracer = otelTesting.getOpenTelemetry().getTracer("testing");
-    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new OpenTelemetryOptions(tracer)));
+    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new OpenTelemetryOptions(otelTesting.getOpenTelemetry())));
     client = vertx.createHttpClient(new HttpClientOptions().setDefaultPort(8080));
   }
 
