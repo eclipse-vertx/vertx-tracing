@@ -14,7 +14,7 @@ import io.opentelemetry.api.trace.Span;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
-public class OpenTelemetryUtil {
+class OpenTelemetryUtil {
 
   static String ACTIVE_CONTEXT = "tracing.context";
   static String ACTIVE_SPAN = "tracing.span";
@@ -24,7 +24,7 @@ public class OpenTelemetryUtil {
    *
    * @return a {@link Span} or null
    */
-  public static Span getSpan() {
+  static Span getSpan() {
     Context c = Vertx.currentContext();
     return c == null ? null : c.getLocal(ACTIVE_SPAN);
   }
@@ -34,7 +34,7 @@ public class OpenTelemetryUtil {
    *
    * @param span the span to associate with the context.
    */
-  public static void setSpan(Span span) {
+  static void setSpan(Span span) {
     if (span != null) {
       Context c = Vertx.currentContext();
       if (c != null) {
@@ -46,7 +46,7 @@ public class OpenTelemetryUtil {
   /**
    * Remove any active span on the context.
    */
-  public static void clearContext() {
+  static void clearContext() {
     Context c = Vertx.currentContext();
     if (c != null) {
       c.removeLocal(ACTIVE_SPAN);
