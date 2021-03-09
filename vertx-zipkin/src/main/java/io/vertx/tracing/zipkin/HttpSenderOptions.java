@@ -16,16 +16,7 @@ import io.vertx.core.http.Http2Settings;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.net.JdkSSLEngineOptions;
-import io.vertx.core.net.JksOptions;
-import io.vertx.core.net.KeyCertOptions;
-import io.vertx.core.net.OpenSSLEngineOptions;
-import io.vertx.core.net.PemKeyCertOptions;
-import io.vertx.core.net.PemTrustOptions;
-import io.vertx.core.net.PfxOptions;
-import io.vertx.core.net.ProxyOptions;
-import io.vertx.core.net.SSLEngineOptions;
-import io.vertx.core.net.TrustOptions;
+import io.vertx.core.net.*;
 
 import java.util.List;
 import java.util.Set;
@@ -34,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Options for reporting to a Zipkin server configured by default to {@code http://localhost:9411/api/v2/spans}.
  */
-@DataObject
+@DataObject(generateConverter = true, publicConverter = false)
 public class HttpSenderOptions extends HttpClientOptions {
 
   public static final String DEFAULT_SENDER_ENDPOINT = "http://localhost:9411/api/v2/spans";
@@ -52,8 +43,16 @@ public class HttpSenderOptions extends HttpClientOptions {
     setTryUseCompression(true);
   }
 
+  public HttpSenderOptions(HttpSenderOptions other) {
+    super(other);
+    init();
+    this.senderEndpoint = other.senderEndpoint;
+  }
+
   public HttpSenderOptions(JsonObject json) {
     super(json);
+    init();
+    HttpSenderOptionsConverter.fromJson(json, this);
   }
 
   /**

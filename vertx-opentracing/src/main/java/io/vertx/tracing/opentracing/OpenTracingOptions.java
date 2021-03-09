@@ -20,15 +20,29 @@ public class OpenTracingOptions extends TracingOptions {
 
   private Tracer tracer;
 
+  public OpenTracingOptions() {
+  }
+
   public OpenTracingOptions(Tracer tracer) {
     this.tracer = tracer;
   }
 
-  public OpenTracingOptions() {
+  public OpenTracingOptions(OpenTracingOptions other) {
+    tracer = other.tracer;
   }
 
   public OpenTracingOptions(JsonObject json) {
     super(json);
+  }
+
+  @Override
+  public OpenTracingOptions copy() {
+    return new OpenTracingOptions(this);
+  }
+
+  // Visible for testing
+  Tracer getTracer() {
+    return tracer;
   }
 
   io.vertx.core.spi.tracing.VertxTracer<?, ?> buildTracer() {
