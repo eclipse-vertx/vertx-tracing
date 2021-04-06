@@ -1,0 +1,61 @@
+= Vertx OpenTelemetry
+
+Vert.x integration with OpenTelemetry.
+
+[source,$lang]
+----
+{@link examples.OpenTelemetryExamples#ex1}
+----
+
+You can also pass a custom `OpenTelemetry` allowing for greater control
+over the configuration.
+
+[source,$lang]
+----
+{@link examples.OpenTelemetryExamples#ex2}
+----
+
+== Tracing policy
+
+The tracing policy defines the behavior of a component when tracing is enabled:
+
+- {@link io.vertx.core.tracing.TracingPolicy#PROPAGATE}: the component reports a span in the active trace
+- {@link io.vertx.core.tracing.TracingPolicy#ALWAYS}: the component reports a span in the active trace or creates a new active trace
+- {@link io.vertx.core.tracing.TracingPolicy#IGNORE}: the component will not be involved in any trace.
+
+The tracing policy is usually configured in the component options.
+
+== HTTP tracing
+
+The Vert.x HTTP server and client reports span around HTTP requests:
+
+- `name`: the HTTP method
+- tags
+  - `http.method`: the HTTP method
+  - `http.url`: the request URL
+  - `http.status_code`: the HTTP status code (as `String`)
+
+The default HTTP server tracing policy is `ALWAYS`, you can configure the policy with {@link io.vertx.core.http.HttpServerOptions#setTracingPolicy}
+
+[source,$lang]
+----
+{@link examples.OpenTelemetryExamples#ex3}
+----
+
+The default HTTP client tracing policy is `PROPAGATE`, you can configure the policy with {@link io.vertx.core.http.HttpClientOptions#setTracingPolicy}
+
+[source,$lang]
+----
+{@link examples.OpenTelemetryExamples#ex4}
+----
+
+== EventBus tracing
+
+The Vert.x EventBus reports spans around message exchanges.
+
+The default sending policy is `PROPAGATE`, you can configure the policy with {@link io.vertx.core.eventbus.DeliveryOptions#setTracingPolicy}.
+
+[source,$lang]
+----
+{@link examples.OpenTelemetryExamples#ex6}
+----
