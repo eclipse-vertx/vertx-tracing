@@ -6,9 +6,10 @@ import io.opentelemetry.context.ContextStorageProvider;
 import io.opentelemetry.context.Scope;
 import io.vertx.core.Vertx;
 
-import static io.vertx.tracing.opentelemetry.OpenTelemetryUtil.ACTIVE_CONTEXT;
-
 public class VertxContextStorageProvider implements ContextStorageProvider {
+
+  static String ACTIVE_CONTEXT = "tracing.context";
+  static String ACTIVE_SPAN = "tracing.span";
 
   @Override
   public ContextStorage get() {
@@ -34,6 +35,9 @@ public class VertxContextStorageProvider implements ContextStorageProvider {
     @Override
     public Context current() {
       io.vertx.core.Context vertxCtx = Vertx.currentContext();
+      if (vertxCtx == null) {
+        return null;
+      }
       return vertxCtx.getLocal(ACTIVE_CONTEXT);
     }
   }

@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -86,11 +87,11 @@ public class OpenTelemetryIntegrationTest {
       vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(policy)).requestHandler(req -> {
         ctx.verify(() -> {
           if (expectTrace) {
-            assertThat(OpenTelemetryUtil.getSpan())
+            assertThat(Span.current())
               .isNotNull();
           } else {
-            assertThat(OpenTelemetryUtil.getSpan())
-              .isNull();
+            assertThat(Span.current())
+              .isEqualTo(Span.getInvalid());
           }
         });
         req.response().end();
@@ -191,26 +192,35 @@ public class OpenTelemetryIntegrationTest {
     assertThat(con.getResponseCode()).isEqualTo(200);
   }
 
-  private void sendRequestWithTrace() throws IOException {
+  private void sendRequestWithTrace() throws IOException, ExecutionException, InterruptedException {
     URL url = new URL("http://localhost:8080");
 
-    Span span = otelTesting.getOpenTelemetry().getTracer("io.vertx").spanBuilder("/")
-      .setSpanKind(SpanKind.CLIENT)
-      .setAttribute("component", "vertx")
-      .startSpan();
-    try (Scope scope = span.makeCurrent()) {
-      span
-        .setAttribute(SemanticAttributes.HTTP_METHOD, "GET")
-        .setAttribute(SemanticAttributes.HTTP_URL, url.toString());
+    // We need to run this inside a vertx context in order to don't make the current span thingy to fail
+    vertx.executeBlocking(p -> {
+      Span span = otelTesting.getOpenTelemetry().getTracer("io.vertx").spanBuilder("/")
+        .setSpanKind(SpanKind.CLIENT)
+        .setAttribute("component", "vertx")
+        .startSpan();
+      try (Scope scope = span.makeCurrent()) {
+        span
+          .setAttribute(SemanticAttributes.HTTP_METHOD, "GET")
+          .setAttribute(SemanticAttributes.HTTP_URL, url.toString());
 
-      HttpURLConnection con = (HttpURLConnection) url.openConnection();
-      textMapPropagator.inject(io.opentelemetry.context.Context.current(), con, setter);
-      con.setRequestMethod("GET");
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        textMapPropagator.inject(io.opentelemetry.context.Context.current(), con, setter);
+        con.setRequestMethod("GET");
 
-      assertThat(con.getResponseCode()).isEqualTo(200);
-    } finally {
-      span.end();
-    }
+        assertThat(con.getResponseCode()).isEqualTo(200);
+      } catch (IOException e) {
+        e.printStackTrace();
+      } finally {
+        span.end();
+        p.complete();
+      }
+    })
+      .toCompletionStage()
+      .toCompletableFuture()
+      .get();
   }
 
   @Test
