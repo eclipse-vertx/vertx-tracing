@@ -89,7 +89,8 @@ public class EventBusTest {
                     .isEqualTo(ADDRESS);
                 }
               }
-              assertThat(count).isEqualTo(expected);
+              assertThat(count)
+                .isEqualTo(expected);
             });
             ctx.completeNow();
           }))

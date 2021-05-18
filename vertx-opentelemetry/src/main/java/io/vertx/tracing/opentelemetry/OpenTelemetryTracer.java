@@ -26,8 +26,8 @@ import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 
 import static io.opentelemetry.context.Context.current;
-import static io.vertx.tracing.opentelemetry.OpenTelemetryUtil.ACTIVE_CONTEXT;
-import static io.vertx.tracing.opentelemetry.OpenTelemetryUtil.ACTIVE_SPAN;
+import static io.vertx.tracing.opentelemetry.VertxContextStorageProvider.ACTIVE_CONTEXT;
+import static io.vertx.tracing.opentelemetry.VertxContextStorageProvider.ACTIVE_SPAN;
 
 class OpenTelemetryTracer implements VertxTracer<Span, Span> {
 
@@ -86,7 +86,7 @@ class OpenTelemetryTracer implements VertxTracer<Span, Span> {
     final Throwable failure,
     final TagExtractor<R> tagExtractor) {
 
-    OpenTelemetryUtil.clearContext();
+    context.removeLocal(ACTIVE_SPAN);
 
     if (span == null) {
       return;
