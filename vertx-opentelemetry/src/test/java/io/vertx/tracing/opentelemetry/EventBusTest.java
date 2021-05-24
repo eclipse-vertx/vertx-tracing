@@ -104,7 +104,7 @@ public class EventBusTest {
   }
 
   @Test
-  public void testEventBusPublishProgagate(VertxTestContext ctx) {
+  public void testEventBusPublishPropagate(VertxTestContext ctx) {
     testPublish(ctx, TracingPolicy.PROPAGATE, 3);
   }
 

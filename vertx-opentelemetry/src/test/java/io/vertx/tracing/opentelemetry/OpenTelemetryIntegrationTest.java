@@ -88,7 +88,7 @@ public class OpenTelemetryIntegrationTest {
         ctx.verify(() -> {
           if (expectTrace) {
             assertThat(Span.current())
-              .isNotNull();
+              .isNotEqualTo(Span.getInvalid());
           } else {
             assertThat(Span.current())
               .isEqualTo(Span.getInvalid());
