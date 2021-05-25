@@ -67,7 +67,8 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
       return null;
     }
 
-    final Span span = tracer.spanBuilder(operation)
+    final Span span = tracer
+      .spanBuilder(operation)
       .setParent(tracingContext)
       .setSpanKind(SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.SERVER : io.opentelemetry.api.trace.SpanKind.CONSUMER)
       .startSpan();
@@ -139,7 +140,7 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
     tracingContext = tracingContext.with(span);
     propagators.getTextMapPropagator().inject(tracingContext, headers, setter);
 
-    return VertxContextStorageProvider.VertxContextStorage.INSTANCE.attach(context, tracingContext.with(span));
+    return VertxContextStorageProvider.VertxContextStorage.INSTANCE.attach(context, tracingContext);
   }
 
   @Override
