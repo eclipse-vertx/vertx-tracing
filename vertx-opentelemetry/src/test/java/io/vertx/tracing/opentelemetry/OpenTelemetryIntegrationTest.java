@@ -13,7 +13,6 @@ package io.vertx.tracing.opentelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
@@ -201,13 +200,13 @@ public class OpenTelemetryIntegrationTest {
         .setSpanKind(SpanKind.CLIENT)
         .setAttribute("component", "vertx")
         .startSpan();
-      try (Scope scope = span.makeCurrent()) {
+      try {
         span
           .setAttribute(SemanticAttributes.HTTP_METHOD, "GET")
           .setAttribute(SemanticAttributes.HTTP_URL, url.toString());
 
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        textMapPropagator.inject(io.opentelemetry.context.Context.current(), con, setter);
+        textMapPropagator.inject(io.opentelemetry.context.Context.root().with(span), con, setter);
         con.setRequestMethod("GET");
 
         assertThat(con.getResponseCode()).isEqualTo(200);
