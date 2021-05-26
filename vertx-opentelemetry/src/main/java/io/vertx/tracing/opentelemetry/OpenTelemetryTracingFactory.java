@@ -10,7 +10,7 @@
  */
 package io.vertx.tracing.opentelemetry;
 
-import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Scope;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.VertxTracerFactory;
 import io.vertx.core.spi.tracing.VertxTracer;
@@ -18,8 +18,10 @@ import io.vertx.core.tracing.TracingOptions;
 
 public class OpenTelemetryTracingFactory implements VertxTracerFactory {
 
+  static final OpenTelemetryTracingFactory INSTANCE = new OpenTelemetryTracingFactory();
+
   @Override
-  public VertxTracer<Span, Span> tracer(final TracingOptions options) {
+  public VertxTracer<Scope, Scope> tracer(final TracingOptions options) {
     OpenTelemetryOptions openTelemetryOptions;
     if (options instanceof OpenTelemetryOptions) {
       openTelemetryOptions = (OpenTelemetryOptions) options;

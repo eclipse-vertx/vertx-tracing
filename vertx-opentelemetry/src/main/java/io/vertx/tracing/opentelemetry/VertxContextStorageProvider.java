@@ -9,19 +9,21 @@ import io.vertx.core.Vertx;
 public class VertxContextStorageProvider implements ContextStorageProvider {
 
   static String ACTIVE_CONTEXT = "tracing.context";
-  static String ACTIVE_SPAN = "tracing.span";
 
   @Override
   public ContextStorage get() {
     return VertxContextStorage.INSTANCE;
   }
 
-  private enum VertxContextStorage implements ContextStorage {
+  enum VertxContextStorage implements ContextStorage {
     INSTANCE;
 
     @Override
     public Scope attach(Context toAttach) {
-      io.vertx.core.Context vertxCtx = Vertx.currentContext();
+      return attach(Vertx.currentContext(), toAttach);
+    }
+
+    public Scope attach(io.vertx.core.Context vertxCtx, Context toAttach) {
       Context current = vertxCtx.getLocal(ACTIVE_CONTEXT);
 
       if (current == toAttach) {
@@ -29,7 +31,11 @@ public class VertxContextStorageProvider implements ContextStorageProvider {
       }
 
       vertxCtx.putLocal(ACTIVE_CONTEXT, toAttach);
-      return () -> vertxCtx.removeLocal(ACTIVE_CONTEXT);
+
+      if (current == null) {
+        return () -> vertxCtx.removeLocal(ACTIVE_CONTEXT);
+      }
+      return () -> vertxCtx.putLocal(ACTIVE_CONTEXT, current);
     }
 
     @Override
