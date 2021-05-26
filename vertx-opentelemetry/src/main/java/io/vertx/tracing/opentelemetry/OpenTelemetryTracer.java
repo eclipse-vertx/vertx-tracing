@@ -60,11 +60,22 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
       return null;
     }
 
+    if (operation.equals("kafka_receive")) {
+      System.out.println("Dumping kafka headers");
+      headers.forEach(e -> System.out.println(e.getKey() + ": " + e.getValue()));
+    }
+
     io.opentelemetry.context.Context parentContext = context.getLocal(ACTIVE_CONTEXT);
     if (parentContext == null) {
       parentContext = io.opentelemetry.context.Context.root();
     }
     final io.opentelemetry.context.Context tracingContext = propagators.getTextMapPropagator().extract(parentContext, headers, getter);
+
+    if (operation.equals("kafka_receive")) {
+      System.out.println("Computed tracing context");
+      System.out.println(tracingContext);
+      System.out.println("Span: " + Span.fromContextOrNull(tracingContext));
+    }
 
     // OpenTelemetry SDK's Context is immutable, therefore if the extracted context is the same as the parent context
     // there is no tracing data to propagate downstream and we can return null.
