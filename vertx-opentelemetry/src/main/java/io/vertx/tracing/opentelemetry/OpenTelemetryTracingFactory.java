@@ -18,6 +18,8 @@ import io.vertx.core.tracing.TracingOptions;
 
 public class OpenTelemetryTracingFactory implements VertxTracerFactory {
 
+  static final OpenTelemetryTracingFactory INSTANCE = new OpenTelemetryTracingFactory();
+
   @Override
   public VertxTracer<Scope, Scope> tracer(final TracingOptions options) {
     OpenTelemetryOptions openTelemetryOptions;

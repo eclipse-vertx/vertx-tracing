@@ -25,13 +25,16 @@ public class OpenTelemetryOptions extends TracingOptions {
 
   public OpenTelemetryOptions(OpenTelemetry openTelemetry) {
     this.openTelemetry = openTelemetry;
+    this.setFactory(OpenTelemetryTracingFactory.INSTANCE);
   }
 
   public OpenTelemetryOptions() {
+    this.setFactory(OpenTelemetryTracingFactory.INSTANCE);
   }
 
   public OpenTelemetryOptions(JsonObject json) {
     super(json);
+    this.setFactory(OpenTelemetryTracingFactory.INSTANCE);
   }
 
   VertxTracer<Scope, Scope> buildTracer() {
