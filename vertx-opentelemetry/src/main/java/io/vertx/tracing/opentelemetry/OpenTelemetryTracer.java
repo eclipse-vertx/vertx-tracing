@@ -55,15 +55,14 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
       return null;
     }
 
-    io.opentelemetry.context.Context parentContext = context.getLocal(ACTIVE_CONTEXT);
-    if (parentContext == null) {
-      parentContext = io.opentelemetry.context.Context.root();
+    io.opentelemetry.context.Context tracingContext = context.getLocal(ACTIVE_CONTEXT);
+    if (tracingContext == null) {
+      tracingContext = io.opentelemetry.context.Context.root();
     }
-    final io.opentelemetry.context.Context tracingContext = propagators.getTextMapPropagator().extract(parentContext, headers, getter);
+    tracingContext = propagators.getTextMapPropagator().extract(tracingContext, headers, getter);
 
-    // OpenTelemetry SDK's Context is immutable, therefore if the extracted context is the same as the parent context
-    // there is no tracing data to propagate downstream and we can return null.
-    if (tracingContext == parentContext && TracingPolicy.PROPAGATE.equals(policy)) {
+    // If no span, and policy is PROPAGATE, then don't create the span
+    if (Span.fromContextOrNull(tracingContext) == null && TracingPolicy.PROPAGATE.equals(policy)) {
       return null;
     }
 
