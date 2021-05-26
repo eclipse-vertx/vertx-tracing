@@ -18,8 +18,6 @@ import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.vertx.core.Context;
-import io.vertx.core.impl.logging.Logger;
-import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.spi.tracing.VertxTracer;
@@ -34,8 +32,6 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
 
   private static final TextMapGetter<Iterable<Entry<String, String>>> getter = new HeadersPropagatorGetter();
   private static final TextMapSetter<BiConsumer<String, String>> setter = new HeadersPropagatorSetter();
-
-  private static final Logger logger = LoggerFactory.getLogger(OpenTelemetryTracer.class);
 
   private final Tracer tracer;
   private final ContextPropagators propagators;
@@ -56,13 +52,7 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
     final TagExtractor<R> tagExtractor) {
 
     if (TracingPolicy.IGNORE.equals(policy)) {
-      logger.debug("Tracing policy ignore");
       return null;
-    }
-
-    if (operation.equals("kafka_receive")) {
-      System.out.println("Dumping kafka headers");
-      headers.forEach(e -> System.out.println(e.getKey() + ": " + e.getValue()));
     }
 
     io.opentelemetry.context.Context parentContext = context.getLocal(ACTIVE_CONTEXT);
@@ -71,16 +61,9 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
     }
     final io.opentelemetry.context.Context tracingContext = propagators.getTextMapPropagator().extract(parentContext, headers, getter);
 
-    if (operation.equals("kafka_receive")) {
-      System.out.println("Computed tracing context");
-      System.out.println(tracingContext);
-      System.out.println("Span: " + Span.fromContextOrNull(tracingContext));
-    }
-
     // OpenTelemetry SDK's Context is immutable, therefore if the extracted context is the same as the parent context
     // there is no tracing data to propagate downstream and we can return null.
     if (tracingContext == parentContext && TracingPolicy.PROPAGATE.equals(policy)) {
-      logger.debug("The policy is propagate but there is no context to propagate");
       return null;
     }
 
@@ -91,10 +74,6 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
       .startSpan();
 
     tagExtractor.extractTo(request, span::setAttribute);
-
-    if (logger.isDebugEnabled()) {
-      logger.debug("Created new receiveRequest span: " + span);
-    }
 
     return VertxContextStorageProvider.VertxContextStorage.INSTANCE.attach(context, tracingContext.with(span));
   }
@@ -108,15 +87,10 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
     final TagExtractor<R> tagExtractor) {
 
     if (scope == null) {
-      logger.debug("There is no scope to close");
       return;
     }
 
     Span span = Span.fromContext(context.getLocal(ACTIVE_CONTEXT));
-
-    if (logger.isDebugEnabled()) {
-      logger.debug("Closing span: " + span);
-    }
 
     if (failure != null) {
       span.recordException(failure);
@@ -141,14 +115,12 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
     final TagExtractor<R> tagExtractor) {
 
     if (TracingPolicy.IGNORE.equals(policy) || request == null) {
-      logger.debug("Tracing policy ignore");
       return null;
     }
 
     io.opentelemetry.context.Context tracingContext = context.getLocal(ACTIVE_CONTEXT);
 
     if (tracingContext == null && !TracingPolicy.ALWAYS.equals(policy)) {
-      logger.debug("No tracing context available and policy is not always");
       return null;
     }
 
@@ -161,10 +133,6 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
       .setSpanKind(SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.CLIENT : io.opentelemetry.api.trace.SpanKind.PRODUCER)
       .startSpan();
     tagExtractor.extractTo(request, span::setAttribute);
-
-    if (logger.isDebugEnabled()) {
-      logger.debug("Created new sendRequest span: " + span);
-    }
 
     tracingContext = tracingContext.with(span);
     propagators.getTextMapPropagator().inject(tracingContext, headers, setter);
