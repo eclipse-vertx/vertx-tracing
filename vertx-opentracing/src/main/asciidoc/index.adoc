@@ -73,3 +73,154 @@ The default sending policy is `PROPAGATE`, you can configure the policy with {@l
 ----
 {@link examples.OpenTracingExamples#ex6}
 ----
+
+== Obtain current Span
+
+Vert.x stores current `Span` object in local context.
+To obtain it, use method `OpenTracingUtil.getSpan()`.
+
+This method will work only on Vert.x threads (instances of `VertxThread`).
+Obtaining from non-Vert.x thread doesn't work by design, method will return null.
+
+== Coroutines support
+
+There is no direct support for coroutines, but it can be achieved with minimal instrumentation.
+
+There are several steps to achieve this.
+
+1. Use `CoroutineVerticle`.
+2. Convert *every route handler* you have to a coroutine.
+3. Use CoroutineContext to store `Tracer` and current `Span` object
+
+
+Example code:
+
+[source,kotlin]
+----
+class TracedVerticle(private val tracer: Tracer): CoroutineVerticle() {
+    override suspend fun start() {
+        val router = Router.router(vertx)
+
+        router.route("/hello1")
+            .method(HttpMethod.GET)
+            .coroutineHandler { ctx ->                          // (1)
+                launch { println("Hello to Console") }
+                ctx.end("Hello from coroutine handler")
+            }
+
+        router.route("/hello2")
+            .method(HttpMethod.GET)
+            .coroutineHandler(::nonSuspendHandler)              // (2)
+
+        vertx.createHttpServer()
+            .requestHandler(router)
+            .listen(8080)
+            .await()
+    }
+
+    private fun nonSuspendHandler(ctx: RoutingContext) {
+        ctx.end("Hello from usual handler")
+    }
+
+    private fun Route.coroutineHandler(handler: Handler<RoutingContext>): Route = // (3)
+        this.coroutineHandler(handler::handle)
+
+    private fun Route.coroutineHandler(                                           // (4)
+        handler: suspend (RoutingContext) -> (Unit)
+    ): Route = handler { ctx ->
+        val span: Span = OpenTracingUtil.getSpan()                                // (5)
+        launch(ctx.vertx().dispatcher() + SpanElement(tracer, span)) {            // (6)
+            val spanElem = coroutineContext[SpanElement]                          // (7)
+            if (spanElem == null) {
+                handler(ctx)
+            } else {
+                val span = spanElem.span
+                val tracer = spanElem.tracer
+                val childSpan = span                                                // (8)
+                try {
+                    withContext(SpanElement(tracer, childSpan)) { handler(ctx) }    // (9)
+                } finally {
+                    // childSpan.finish()                                           // (10)
+                }
+            }
+            // OR create a helper method for further reuse
+            withContextTraced(coroutineContext) {
+                try {
+                    handler(ctx)
+                } catch (t: Throwable) {
+                    ctx.fail(t)
+                }
+            }
+        }
+    }
+}
+----
+
+1. Creates a coroutine handler with `coroutineHandler` extension method.
+2. Creates usual async handler, which is then wrapped to a coroutine.
+3. Extension method to convert `Handler<RoutingContext>` to suspendable function.
+4. Extension method which creates and launches a coroutine on Vert.x EventLoop.
+5. Get current `Span` from Vert.x local context (populated automatically).
+6. Create a wrapper coroutine, add current Span to `CoroutineContext`.
+7. Retrieve a `Span` from coroutine context.
+8. Either reuse `span` or create a new span with `tracer.buildSpan("").asChildOf(span).start()`.
+9. Put a new `Span` to a context.
+10. Finish `childSpan`, if you created a new one.
+
+Helper code, your implementation may vary:
+
+[source,kotlin]
+----
+/**
+* Keeps references to a tracer and current Span inside CoroutineContext
+*/
+class SpanElement(val tracer: Tracer, val span: Span) :
+    ThreadContextElement<Scope>,
+    AbstractCoroutineContextElement(SpanElement) {
+
+    companion object Key : CoroutineContext.Key<SpanElement>
+
+    /**
+    *  Will close current [Scope] after continuation's pause.
+    */
+    override fun restoreThreadContext(context: CoroutineContext, oldState: Scope) {
+        oldState.close()
+    }
+
+    /**
+    * Will create a new [Scope] after each continuation's resume, scope is activated with provided [span] instance.
+    */
+    override fun updateThreadContext(context: CoroutineContext): Scope {
+        return tracer.activateSpan(span)
+    }
+}
+
+/**
+* Advanced helper method with a few options, also shows how to use MDCContext to pass a Span to a logger.
+*/
+suspend fun <T> withContextTraced(
+    context: CoroutineContext,
+    reuseParentSpan: Boolean = true,
+    block: suspend CoroutineScope.() -> T
+): T {
+    return coroutineScope {
+        val spanElem = this.coroutineContext[SpanElement]
+
+        if (spanElem == null) {
+            logger.warn { "Calling 'withTracer', but no span found in context" }
+            withContext(context, block)
+        } else {
+            val childSpan = if (reuseParentSpan) spanElem.span
+            else spanElem.tracer.buildSpan("").asChildOf(spanElem.span).start()
+
+            try {
+                val mdcSpan = mapOf(MDC_SPAN_KEY to childSpan.toString())
+                withContext(context + SpanElement(spanElem.tracer, childSpan) + MDCContext(mdcSpan), block)
+            } finally {
+                if (!reuseParentSpan) childSpan.finish()
+            }
+        }
+    }
+}
+private const val MDC_SPAN_KEY = "request.span.id"
+----
