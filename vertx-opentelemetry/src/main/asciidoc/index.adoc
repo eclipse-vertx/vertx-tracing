@@ -15,6 +15,14 @@ over the configuration.
 {@link examples.OpenTelemetryExamples#ex2}
 ----
 
+If you only add this library, it will give you access to OpenTelemetry API with a default `noop` Tracer,
+which gives dummy values (all zeroes) for trace and span ids. The OpenTelemetry SDK is needed to get proper values.
+
+[source,$lang]
+----
+{@link examples.OpenTelemetryExamples#ex7}
+----
+
 == Tracing policy
 
 The tracing policy defines the behavior of a component when tracing is enabled:
