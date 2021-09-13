@@ -56,4 +56,14 @@ public class OpenTelemetryExamples {
     DeliveryOptions options = new DeliveryOptions().setTracingPolicy(TracingPolicy.ALWAYS);
     vertx.eventBus().send("the-address", "foo", options);
   }
+
+  public void ex7(VertxOptions vertxOptions) {
+    SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder().build();
+    OpenTelemetry openTelemetry = OpenTelemetrySdk.builder()
+      .setTracerProvider(sdkTracerProvider)
+      .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+      .buildAndRegisterGlobal();
+
+    vertxOptions.setTracingOptions(new OpenTelemetryOptions(openTelemetry));
+  }
 }
