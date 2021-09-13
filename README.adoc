@@ -5,6 +5,12 @@ image:https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg?style
 
 This is the repository for Vert.x tracing SPI implementations.
 
+== OpenTelemetry
+
+Provides integration https://opentelemetry.io/[OpenTelemetry]
+
+- https://vertx.io/docs/vertx-opentelemetry/java/[website docs]
+
 == OpenTracing
 
 Provides integration https://opentracing.io[OpenTracing]
