@@ -26,6 +26,7 @@ import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.tracing.TracingPolicy;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -129,6 +130,10 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
     }
   };
 
+  public VertxSender sender() {
+    return sender;
+  }
+
   /**
    * @return the current active {@link Span} otherwise {@code null}
    */
@@ -154,21 +159,23 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
   private final TraceContext.Extractor<HttpServerRequest> httpServerExtractor;
   private final Tracing tracing;
   private final boolean closeTracer;
+  private final VertxSender sender;
   private final HttpServerHandler<HttpServerRequest, HttpServerRequest> httpServerHandler;
   private final HttpClientHandler<HttpRequest, HttpResponse> clientHandler;
   private final TraceContext.Extractor<Map<String, String>> mapExtractor;
 
-  public ZipkinTracer(boolean closeTracer, Tracing tracing) {
-    this(closeTracer, HttpTracing.newBuilder(tracing).build());
+  public ZipkinTracer(boolean closeTracer, Tracing tracing, VertxSender sender) {
+    this(closeTracer, HttpTracing.newBuilder(tracing).build(), sender);
   }
 
-  public ZipkinTracer(boolean closeTracer, HttpTracing httpTracing) {
+  public ZipkinTracer(boolean closeTracer, HttpTracing httpTracing, VertxSender sender) {
     this.closeTracer = closeTracer;
     this.tracing = httpTracing.tracing();
     this.clientHandler = HttpClientHandler.create(httpTracing, HTTP_CLIENT_ADAPTER);
     this.httpServerHandler = HttpServerHandler.create(httpTracing, HTTP_SERVER_ADAPTER);
     this.httpServerExtractor = httpTracing.tracing().propagation().extractor(HTTP_SERVER_GETTER);
     this.mapExtractor = tracing.propagation().extractor(MAP_GETTER);
+    this.sender = sender;
   }
 
   public Tracing getTracing() {
@@ -307,10 +314,6 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
 
   private static final Pattern P = Pattern.compile("^([^:]+):([0-9]+)$");
 
-
-
-
-
   @Override
   public <R> void receiveResponse(Context context, R response, BiConsumer<Object, Throwable> payload, Throwable failure, TagExtractor<R> tagExtractor) {
     if (payload != null) {
@@ -322,6 +325,13 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
   public void close() {
     if (closeTracer) {
       tracing.close();
+    }
+    if (sender != null) {
+      try {
+        sender.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
   }
 }

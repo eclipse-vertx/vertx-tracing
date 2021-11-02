@@ -23,7 +23,7 @@ public class OpenTracingTracerFactory implements VertxTracerFactory {
     if (options instanceof OpenTracingOptions) {
       openTracingOptions = (OpenTracingOptions) options;
     } else {
-      openTracingOptions = new OpenTracingOptions();
+      openTracingOptions = new OpenTracingOptions(options.toJson());
     }
     return openTracingOptions.buildTracer();
   }

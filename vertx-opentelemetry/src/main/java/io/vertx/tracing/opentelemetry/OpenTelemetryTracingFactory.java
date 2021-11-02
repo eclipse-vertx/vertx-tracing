@@ -26,7 +26,7 @@ public class OpenTelemetryTracingFactory implements VertxTracerFactory {
     if (options instanceof OpenTelemetryOptions) {
       openTelemetryOptions = (OpenTelemetryOptions) options;
     } else {
-      openTelemetryOptions = new OpenTelemetryOptions();
+      openTelemetryOptions = new OpenTelemetryOptions(options.toJson());
     }
     return openTelemetryOptions.buildTracer();
   }

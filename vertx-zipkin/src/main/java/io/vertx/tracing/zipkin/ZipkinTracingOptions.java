@@ -120,12 +120,12 @@ public class ZipkinTracingOptions extends TracingOptions {
   /**
    * Build the tracer and return it.
    */
-  public VertxTracer<?, ?> buildTracer() {
+  public ZipkinTracer buildTracer() {
     if (httpTracing != null) {
-      return new ZipkinTracer(false, httpTracing);
+      return new ZipkinTracer(false, httpTracing, null);
     } else if (senderOptions != null) {
       String localServiceName = serviceName;
-      Sender sender = new VertxSender(senderOptions);
+      VertxSender sender = new VertxSender(senderOptions);
       Tracing tracing = Tracing
         .newBuilder()
         .supportsJoin(supportsJoin)
@@ -133,19 +133,15 @@ public class ZipkinTracingOptions extends TracingOptions {
         .spanReporter(AsyncReporter.builder(sender).build())
         .sampler(Sampler.ALWAYS_SAMPLE)
         .build();
-      return new ZipkinTracer(true, tracing) {
-        @Override
-        public void close() {
-          super.close();
-          try {
-            sender.close();
-          } catch (IOException e) {
-            e.printStackTrace();
-          }
-        }
-      };
+      return new ZipkinTracer(true, tracing, sender);
     } else {
       return null;
     }
+  }
+
+  public JsonObject toJson() {
+    JsonObject json = new JsonObject();
+    ZipkinTracingOptionsConverter.toJson(this, json);
+    return json;
   }
 }

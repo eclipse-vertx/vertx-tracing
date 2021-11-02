@@ -27,4 +27,14 @@ public class ZipkinTracingOptionsTest {
     ZipkinTracingOptions other = (ZipkinTracingOptions) copy;
     assertEquals("foo", other.getServiceName());
   }
+
+  @Test
+  public void testBuildFromJsonOptions() {
+    HttpSenderOptions senderOptions = new HttpSenderOptions().setDefaultHost("remote-server");
+    ZipkinTracingOptions options = new ZipkinTracingOptions().setSenderOptions(senderOptions);
+    ZipkinTracerFactory factory = new ZipkinTracerFactory();
+    ZipkinTracer tracer = factory.tracer(new TracingOptions(options.toJson()));
+    VertxSender sender = tracer.sender();
+    assertEquals(senderOptions.toJson(), sender.options().toJson());
+  }
 }

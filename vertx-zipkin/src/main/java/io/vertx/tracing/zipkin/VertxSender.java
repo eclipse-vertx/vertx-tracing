@@ -50,12 +50,18 @@ public class VertxSender extends Sender {
   private final int messageMaxBytes = 5242880;
   private final Vertx vertx;
   private final HttpClient client;
+  private final HttpSenderOptions options;
   private final String endpoint;
 
   public VertxSender(HttpSenderOptions options) {
+    this.options = new HttpSenderOptions(options);
     this.endpoint = options.getSenderEndpoint();
     this.vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new TracingOptions().setFactory(VertxTracerFactory.NOOP)));
     this.client = vertx.createHttpClient(options);
+  }
+
+  HttpSenderOptions options() {
+    return options;
   }
 
   @Override
