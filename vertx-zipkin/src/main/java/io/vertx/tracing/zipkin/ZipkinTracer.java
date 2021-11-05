@@ -13,6 +13,7 @@ package io.vertx.tracing.zipkin;
 import brave.Span;
 import brave.Tracing;
 import brave.http.*;
+import brave.propagation.B3SingleFormat;
 import brave.propagation.Propagation;
 import brave.propagation.TraceContext;
 import brave.propagation.TraceContextOrSamplingFlags;
@@ -154,6 +155,21 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       return ctx.getLocal(ACTIVE_CONTEXT);
     }
     return null;
+  }
+  
+  public static void importTraceId(String traceId) {
+	  Context ctx = Vertx.currentContext();
+	  if (ctx != null) {
+		  ctx.putLocal(ACTIVE_CONTEXT, B3SingleFormat.parseB3SingleFormat(traceId).context());
+	  }
+  }
+  
+  public static String exportTraceId() {
+	  TraceContext ctx = activeContext();
+	  if (ctx != null) {
+		  return B3SingleFormat.writeB3SingleFormat(ctx);
+	  }
+	  return null;
   }
 
   private final TraceContext.Extractor<HttpServerRequest> httpServerExtractor;
