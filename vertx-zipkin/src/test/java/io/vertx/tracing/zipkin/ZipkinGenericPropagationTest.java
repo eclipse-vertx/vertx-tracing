@@ -41,7 +41,7 @@ public class ZipkinGenericPropagationTest extends ZipkinBaseTest {
     vertx.createHttpServer().requestHandler(req -> {
       ContextInternal current = (ContextInternal) Vertx.currentContext();
       VertxTracer tracer = current.tracer();
-      TraceContext requestContext = current.getLocal(ZipkinTracer.ACTIVE_CONTEXT);
+      TraceContext requestContext = current.getLocal(ZipkinTracerUtil.ACTIVE_CONTEXT);
       Object request = new Object();
       Map<String, String> headers = new HashMap<>();
       Object trace = tracer.sendRequest(current, SpanKind.RPC, TracingPolicy.PROPAGATE, request, "my_op", (BiConsumer<String, String>) headers::put, TagExtractor.empty());

@@ -56,7 +56,7 @@ public class ZipkinHttpServerITTest extends ITHttpServer implements Handler<Http
 
   @Override
   public void handle(HttpServerRequest req) {
-    TraceContext ctx = ZipkinTracer.activeContext();
+    TraceContext ctx = ZipkinTracerUtil.getContext();
     switch (req.path()) {
       case "/extra":
         req.response().end(ExtraFieldPropagation.get(ctx, EXTRA_KEY));
@@ -81,7 +81,7 @@ public class ZipkinHttpServerITTest extends ITHttpServer implements Handler<Http
         }
         break;
       case "/async":
-        if (ZipkinTracer.activeSpan() == null) {
+        if (ZipkinTracerUtil.getSpan() == null) {
           throw new IllegalStateException("couldn't read current span!");
         }
         req.endHandler(v -> req.response().end("bar"));
