@@ -24,7 +24,7 @@ public final class ZipkinTracerUtil {
   /**
    * @return the current active {@link TraceContext} otherwise {@code null}
    */
-  public static TraceContext getContext() {
+  public static TraceContext getTraceContext() {
     Context ctx = Vertx.currentContext();
     if (ctx != null) {
       return ctx.getLocal(ACTIVE_CONTEXT);
@@ -66,7 +66,7 @@ public final class ZipkinTracerUtil {
    * Export active traceId otherwise {@code null}.
    */
   public static String exportTraceId() {
-    TraceContext ctx = getContext();
+    TraceContext ctx = getTraceContext();
     if (ctx != null) {
       return B3SingleFormat.writeB3SingleFormat(ctx);
     }
@@ -76,7 +76,7 @@ public final class ZipkinTracerUtil {
   /**
    * Set active {@link TraceContext}.
    */
-  public static void setContext(TraceContext context) {
+  public static void setTraceContext(TraceContext context) {
 	Context ctx = Vertx.currentContext();
 	if(ctx != null) {
       ctx.putLocal(ACTIVE_CONTEXT, context);

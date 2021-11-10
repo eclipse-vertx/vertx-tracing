@@ -56,7 +56,7 @@ public class ZipkinHttpServerITTest extends ITHttpServer implements Handler<Http
 
   @Override
   public void handle(HttpServerRequest req) {
-    TraceContext ctx = ZipkinTracerUtil.getContext();
+    TraceContext ctx = ZipkinTracerUtil.getTraceContext();
     switch (req.path()) {
       case "/extra":
         req.response().end(ExtraFieldPropagation.get(ctx, EXTRA_KEY));

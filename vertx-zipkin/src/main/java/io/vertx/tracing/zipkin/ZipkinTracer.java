@@ -192,7 +192,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
     }
     ZipkinTracerUtil.setSpan(span);
     context.putLocal(ACTIVE_REQUEST, request);
-    ZipkinTracerUtil.setContext(span.context());
+    ZipkinTracerUtil.setTraceContext(span.context());
     return span;
   }
 
@@ -215,7 +215,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
     if (policy == TracingPolicy.IGNORE) {
       return null;
     }
-    TraceContext activeCtx = ZipkinTracerUtil.getContext();
+    TraceContext activeCtx = ZipkinTracerUtil.getTraceContext();
     Span span;
     if (activeCtx == null) {
       if (policy != TracingPolicy.ALWAYS) {
