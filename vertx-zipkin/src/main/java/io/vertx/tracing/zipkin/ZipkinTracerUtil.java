@@ -52,6 +52,9 @@ public final class ZipkinTracerUtil {
     }
   }
   
+  /**
+   * Import traceId.
+   */
   public static void importTraceId(String traceId) {
     Context ctx = Vertx.currentContext();
     if (ctx != null) {
@@ -59,6 +62,9 @@ public final class ZipkinTracerUtil {
     }
   }
   
+  /**
+   * Export active traceId otherwise {@code null}.
+   */
   public static String exportTraceId() {
     TraceContext ctx = getContext();
     if (ctx != null) {
@@ -66,7 +72,10 @@ public final class ZipkinTracerUtil {
     }
     return null;
   }
-
+  
+  /**
+   * Set active {@link TraceContext}.
+   */
   public static void setContext(TraceContext context) {
 	Context ctx = Vertx.currentContext();
 	if(ctx != null) {
@@ -74,6 +83,9 @@ public final class ZipkinTracerUtil {
 	}
   }
 
+  /**
+   * Set active {@link Span}.
+   */
   public static void setSpan(Span span) {
     Context ctx = Vertx.currentContext();
 	if(ctx != null) {
