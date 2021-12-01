@@ -19,7 +19,9 @@ import brave.propagation.TraceContext;
 import brave.propagation.TraceContextOrSamplingFlags;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.*;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
@@ -42,6 +44,8 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
 
   // docker run --rm -ti -p 9411:9411 openzipkin/zipkin
 
+  public static final String ACTIVE_SPAN = "vertx.tracing.zipkin.active_span";
+  public static final String ACTIVE_CONTEXT = "vertx.tracing.zipkin.active_context";
   public static final String ACTIVE_REQUEST = "vertx.tracing.zipkin.active_request";
 
   static final HttpServerAdapter<HttpServerRequest, HttpServerRequest> HTTP_SERVER_ADAPTER =
@@ -133,6 +137,28 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
     return sender;
   }
 
+  /**
+   * @return the current active {@link Span} otherwise {@code null}
+   */
+  public static Span activeSpan() {
+    Context ctx = Vertx.currentContext();
+    if (ctx != null) {
+      return ctx.getLocal(ACTIVE_SPAN);
+    }
+    return null;
+  }
+
+  /**
+   * @return the current active {@link TraceContext} otherwise {@code null}
+   */
+  public static TraceContext activeContext() {
+    Context ctx = Vertx.currentContext();
+    if (ctx != null) {
+      return ctx.getLocal(ACTIVE_CONTEXT);
+    }
+    return null;
+  }
+
   private final TraceContext.Extractor<HttpServerRequest> httpServerExtractor;
   private final Tracing tracing;
   private final boolean closeTracer;
@@ -190,16 +216,16 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       span.name(operation);
       reportTags(request, tagExtractor, span);
     }
-    ZipkinTracerUtil.setSpan(span);
+    context.putLocal(ACTIVE_SPAN, span);
     context.putLocal(ACTIVE_REQUEST, request);
-    ZipkinTracerUtil.setTraceContext(span.context());
+    context.putLocal(ACTIVE_CONTEXT, span.context());
     return span;
   }
 
   @Override
   public <R> void sendResponse(Context context, R response, Span span, Throwable failure, TagExtractor<R> tagExtractor) {
     if (span != null) {
-      ZipkinTracerUtil.clearSpan();
+      context.removeLocal(ACTIVE_SPAN);
       if (response instanceof HttpServerResponse) {
         HttpServerRequest httpReq = context.getLocal(ACTIVE_REQUEST);
         httpServerHandler.handleSend(httpReq, failure, span);
@@ -215,7 +241,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
     if (policy == TracingPolicy.IGNORE) {
       return null;
     }
-    TraceContext activeCtx = ZipkinTracerUtil.getTraceContext();
+    TraceContext activeCtx = context.getLocal(ACTIVE_CONTEXT);
     Span span;
     if (activeCtx == null) {
       if (policy != TracingPolicy.ALWAYS) {
@@ -309,6 +335,67 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       } catch (IOException e) {
         e.printStackTrace();
       }
+    }
+  }
+
+  /**
+   * Remove any active context.
+   */
+  public static void clearContext() {
+    Context c = Vertx.currentContext();
+    if (c != null) {
+      c.removeLocal(ACTIVE_CONTEXT);
+    }
+  }
+
+  /**
+   * Remove any active span.
+   */
+  public static void clearSpan() {
+    Context c = Vertx.currentContext();
+    if (c != null) {
+      c.removeLocal(ACTIVE_SPAN);
+    }
+  }
+
+  /**
+   * Import traceId.
+   */
+  public static void importTraceId(String traceId) {
+    Context ctx = Vertx.currentContext();
+    if (ctx != null) {
+      ctx.putLocal(ACTIVE_CONTEXT, B3SingleFormat.parseB3SingleFormat(traceId).context());
+    }
+  }
+
+  /**
+   * Export active traceId otherwise {@code null}.
+   */
+  public static String exportTraceId() {
+    TraceContext ctx = activeContext();
+    if (ctx != null) {
+      return B3SingleFormat.writeB3SingleFormat(ctx);
+    }
+    return null;
+  }
+
+  /**
+   * Set active {@link TraceContext}.
+   */
+  public static void setTraceContext(TraceContext context) {
+    Context ctx = Vertx.currentContext();
+    if (ctx != null) {
+      ctx.putLocal(ACTIVE_CONTEXT, context);
+    }
+  }
+
+  /**
+   * Set active {@link Span}.
+   */
+  public static void setSpan(Span span) {
+    Context ctx = Vertx.currentContext();
+    if (ctx != null) {
+      ctx.putLocal(ACTIVE_SPAN, span);
     }
   }
 }
