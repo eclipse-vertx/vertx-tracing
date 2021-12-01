@@ -13,7 +13,6 @@ package io.vertx.tracing.zipkin;
 import brave.propagation.ExtraFieldPropagation;
 import brave.propagation.TraceContext;
 import brave.test.http.ITHttpServer;
-import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;

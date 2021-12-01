@@ -13,12 +13,15 @@ package io.vertx.tracing.zipkin;
 import brave.Span;
 import brave.Tracing;
 import brave.http.*;
+import brave.propagation.B3SingleFormat;
 import brave.propagation.Propagation;
 import brave.propagation.TraceContext;
 import brave.propagation.TraceContextOrSamplingFlags;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.*;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
@@ -332,6 +335,67 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       } catch (IOException e) {
         e.printStackTrace();
       }
+    }
+  }
+
+  /**
+   * Remove any active context.
+   */
+  public static void clearContext() {
+    Context c = Vertx.currentContext();
+    if (c != null) {
+      c.removeLocal(ACTIVE_CONTEXT);
+    }
+  }
+
+  /**
+   * Remove any active span.
+   */
+  public static void clearSpan() {
+    Context c = Vertx.currentContext();
+    if (c != null) {
+      c.removeLocal(ACTIVE_SPAN);
+    }
+  }
+
+  /**
+   * Import traceId.
+   */
+  public static void importTraceId(String traceId) {
+    Context ctx = Vertx.currentContext();
+    if (ctx != null) {
+      ctx.putLocal(ACTIVE_CONTEXT, B3SingleFormat.parseB3SingleFormat(traceId).context());
+    }
+  }
+
+  /**
+   * Export active traceId otherwise {@code null}.
+   */
+  public static String exportTraceId() {
+    TraceContext ctx = activeContext();
+    if (ctx != null) {
+      return B3SingleFormat.writeB3SingleFormat(ctx);
+    }
+    return null;
+  }
+
+  /**
+   * Set active {@link TraceContext}.
+   */
+  public static void setTraceContext(TraceContext context) {
+    Context ctx = Vertx.currentContext();
+    if (ctx != null) {
+      ctx.putLocal(ACTIVE_CONTEXT, context);
+    }
+  }
+
+  /**
+   * Set active {@link Span}.
+   */
+  public static void setSpan(Span span) {
+    Context ctx = Vertx.currentContext();
+    if (ctx != null) {
+      ctx.putLocal(ACTIVE_SPAN, span);
     }
   }
 }
