@@ -29,7 +29,7 @@
       
     <artifactId>vertx-tracing-parent</artifactId>
       
-    <version>4.1.8-SNAPSHOT</version>
+    <version>4.1.8</version>
       
     <packaging>pom</packaging>
       
@@ -37,7 +37,7 @@
       
     <properties>
             
-        <stack.version>4.1.8-SNAPSHOT</stack.version>
+        <stack.version>4.1.8</stack.version>
             
         <doc.skip>true</doc.skip>
             
