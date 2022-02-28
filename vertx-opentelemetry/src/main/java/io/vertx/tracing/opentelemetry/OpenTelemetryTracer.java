@@ -12,6 +12,7 @@ package io.vertx.tracing.opentelemetry;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapGetter;
@@ -61,13 +62,10 @@ class OpenTelemetryTracer implements VertxTracer<Span, Span> {
       return null;
     }
 
-    final Span span = tracer
+    final Span span = reportTagsAndStart(tracer
       .spanBuilder(operation)
       .setParent(tracingContext)
-      .setSpanKind(SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.SERVER : io.opentelemetry.api.trace.SpanKind.CONSUMER)
-      .startSpan();
-
-    tagExtractor.extractTo(request, span::setAttribute);
+      .setSpanKind(SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.SERVER : io.opentelemetry.api.trace.SpanKind.CONSUMER), request, tagExtractor);
 
     VertxContextStorageProvider.VertxContextStorage.INSTANCE.attach(context, tracingContext.with(span));
 
@@ -123,11 +121,10 @@ class OpenTelemetryTracer implements VertxTracer<Span, Span> {
       tracingContext = io.opentelemetry.context.Context.root();
     }
 
-    final Span span = tracer.spanBuilder(operation)
-      .setParent(tracingContext)
-      .setSpanKind(SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.CLIENT : io.opentelemetry.api.trace.SpanKind.PRODUCER)
-      .startSpan();
-    tagExtractor.extractTo(request, span::setAttribute);
+    final Span span = reportTagsAndStart(tracer.spanBuilder(operation)
+        .setParent(tracingContext)
+        .setSpanKind(SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.CLIENT : io.opentelemetry.api.trace.SpanKind.PRODUCER)
+      , request, tagExtractor);
 
     tracingContext = tracingContext.with(span);
     propagators.getTextMapPropagator().inject(tracingContext, headers, setter);
@@ -145,6 +142,15 @@ class OpenTelemetryTracer implements VertxTracer<Span, Span> {
     if (span != null) {
       end(span, response, tagExtractor, failure);
     }
+  }
+
+  // tags need to be set before start, otherwise any sampler registered won't have access to it
+  private <T> Span reportTagsAndStart(SpanBuilder span, T obj, TagExtractor<T> tagExtractor) {
+    int len = tagExtractor.len(obj);
+    for (int idx = 0; idx < len; idx++) {
+      span.setAttribute(tagExtractor.name(obj, idx), tagExtractor.value(obj, idx));
+    }
+    return span.startSpan();
   }
 
 }
