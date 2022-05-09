@@ -16,13 +16,19 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.RequestOptions;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -39,13 +45,17 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertEquals;
 
 
 @ExtendWith(VertxExtension.class)
@@ -70,9 +80,8 @@ public class OpenTelemetryIntegrationTest {
   }
 
   private static Stream<Arguments> testTracingPolicyArgs() {
-    return Stream.of(TracingPolicy.IGNORE, TracingPolicy.PROPAGATE, TracingPolicy.ALWAYS)
+    return Stream.of(TracingPolicy.PROPAGATE)
       .flatMap(policy -> Stream.of(
-        Arguments.of(policy, false),
         Arguments.of(policy, true)
       ));
   }
@@ -182,6 +191,48 @@ public class OpenTelemetryIntegrationTest {
       otelTesting.assertTraces()
         .hasSize(0);
     }
+    ctx.completeNow();
+  }
+
+  @Test
+  public void testParentSpan(VertxTestContext ctx) throws Exception {
+    CountDownLatch latch = new CountDownLatch(1);
+
+    ctx.assertComplete(
+      vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.IGNORE)).requestHandler(req -> {
+        req.response().end();
+      }).listen(8081).onSuccess(v -> latch.countDown())
+    );
+
+    int num = 2;
+
+    ctx.assertComplete(
+      vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.ALWAYS)).requestHandler(req -> {
+        HttpClient client = vertx.createHttpClient(new HttpClientOptions().setTracingPolicy(TracingPolicy.PROPAGATE));
+        List<Future> futures = new ArrayList<>();
+        for (int i = 0;i < num;i++) {
+          futures.add(client.request(new RequestOptions().setPort(8081).setHost("localhost"))
+            .compose(HttpClientRequest::send).compose(HttpClientResponse::body));
+        }
+        CompositeFuture.all(futures).onComplete(ctx.succeeding(v -> {
+          req.response().end();
+        }));
+      }).listen(8080).onSuccess(v -> latch.countDown())
+    );
+
+    Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS));
+
+    sendRequest();
+
+    List<SpanData> spans = otelTesting.getSpans();
+    List<SpanData> serverSpans = spans.stream().filter(span -> span.getKind() == SpanKind.SERVER).collect(Collectors.toList());
+    Assertions.assertEquals(1, serverSpans.size());
+    List<SpanData> clientSpans = spans.stream().filter(span -> span.getKind() == SpanKind.CLIENT).collect(Collectors.toList());
+    Assertions.assertEquals(num, clientSpans.size());
+    for (SpanData clientSpan : clientSpans) {
+      Assertions.assertEquals(serverSpans.get(0).getSpanId(), clientSpan.getParentSpanId());
+    }
+
     ctx.completeNow();
   }
 
