@@ -22,6 +22,7 @@ import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -61,7 +62,7 @@ public class EventBusTest {
     testSend(ctx, TracingPolicy.IGNORE, 0);
   }
 
-  @Test
+  @RepeatedTest(10000)
   public void testEventBusSendAlways(VertxTestContext ctx) {
     testSend(ctx, TracingPolicy.ALWAYS, 2);
   }
@@ -74,29 +75,33 @@ public class EventBusTest {
     vertx.deployVerticle(producerVerticle, ctx.succeeding(d1 -> {
       Promise<Void> consumerPromise = Promise.promise();
       vertx.deployVerticle(new ConsumerVerticle(consumerPromise), ctx.succeeding(d2 ->
-        client.request(HttpMethod.GET, "/", ctx.succeeding(req ->
-          req.send(ctx.succeeding(resp -> {
-            ctx.verify(() -> {
-              int count = 0;
-              for (SpanData data : otelTesting.getSpans()) {
-                String operationName = data.getName();
-                assertThat(operationName).isNotNull();
-                if (!operationName.equals("GET")) {
-                  count++;
-                  assertThat(operationName)
-                    .isEqualTo("send");
-                  assertThat(data.getAttributes().get(AttributeKey.stringKey("message_bus.destination")))
-                    .isEqualTo(ADDRESS);
-                }
-              }
-              assertThat(count)
-                .isEqualTo(expected);
-            });
-            ctx.completeNow();
-          }))
-        ))
+        client.request(HttpMethod.GET, "/")
+          .compose(HttpClientRequest::send)
+          .compose(HttpClientResponse::body)
+          .onComplete(ctx.succeeding(body -> {}))
       ));
     }));
+    long now = System.currentTimeMillis();
+    while (true) {
+      int count = 0;
+      for (SpanData data : otelTesting.getSpans()) {
+        String operationName = data.getName();
+        assertThat(operationName).isNotNull();
+        if (!operationName.equals("GET")) {
+          count++;
+          assertThat(operationName)
+            .isEqualTo("send");
+          assertThat(data.getAttributes().get(AttributeKey.stringKey("message_bus.destination")))
+            .isEqualTo(ADDRESS);
+        }
+      }
+      if (count == expected) {
+        break;
+      }
+      assertThat(System.currentTimeMillis() - now)
+        .isLessThan(10_000L);
+    }
+    ctx.completeNow();
   }
 
   private TracingPolicy getHttpServerPolicy(TracingPolicy policy) {
