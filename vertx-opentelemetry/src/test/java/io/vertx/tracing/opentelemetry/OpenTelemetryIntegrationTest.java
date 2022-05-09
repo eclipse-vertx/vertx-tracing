@@ -27,6 +27,7 @@ import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -97,7 +98,7 @@ public class OpenTelemetryIntegrationTest {
       }).listen(8080).onSuccess(v -> latch.countDown())
     );
 
-    latch.countDown();
+    Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS));
 
     if (createTrace) {
       sendRequestWithTrace();
@@ -152,7 +153,7 @@ public class OpenTelemetryIntegrationTest {
       .requestHandler(req -> req.response().end())
       .listen(8081, ctx.succeeding(v -> latch.countDown()));
 
-    latch.await();
+    Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS));
 
     if (createTrace) {
       sendRequestWithTrace();
@@ -235,7 +236,7 @@ public class OpenTelemetryIntegrationTest {
       ))
     ).listen(8080, ctx.succeeding(v -> latch.countDown()));
 
-    latch.await();
+    Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS));
 
     sendRequestWithTrace();
 
