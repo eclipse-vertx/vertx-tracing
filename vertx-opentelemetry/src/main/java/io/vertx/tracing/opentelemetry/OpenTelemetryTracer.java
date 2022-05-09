@@ -13,7 +13,6 @@ package io.vertx.tracing.opentelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapSetter;
@@ -28,7 +27,7 @@ import java.util.function.BiConsumer;
 
 import static io.vertx.tracing.opentelemetry.VertxContextStorageProvider.ACTIVE_CONTEXT;
 
-class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
+class OpenTelemetryTracer implements VertxTracer<Span, Span> {
 
   private static final TextMapGetter<Iterable<Entry<String, String>>> getter = new HeadersPropagatorGetter();
   private static final TextMapSetter<BiConsumer<String, String>> setter = new HeadersPropagatorSetter();
@@ -42,7 +41,7 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
   }
 
   @Override
-  public <R> Scope receiveRequest(
+  public <R> Span receiveRequest(
     final Context context,
     final SpanKind kind,
     final TracingPolicy policy,
@@ -55,11 +54,7 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
       return null;
     }
 
-    io.opentelemetry.context.Context tracingContext = context.getLocal(ACTIVE_CONTEXT);
-    if (tracingContext == null) {
-      tracingContext = io.opentelemetry.context.Context.root();
-    }
-    tracingContext = propagators.getTextMapPropagator().extract(tracingContext, headers, getter);
+    io.opentelemetry.context.Context tracingContext = propagators.getTextMapPropagator().extract(io.opentelemetry.context.Context.root(), headers, getter);
 
     // If no span, and policy is PROPAGATE, then don't create the span
     if (Span.fromContextOrNull(tracingContext) == null && TracingPolicy.PROPAGATE.equals(policy)) {
@@ -74,23 +69,25 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
 
     tagExtractor.extractTo(request, span::setAttribute);
 
-    return VertxContextStorageProvider.VertxContextStorage.INSTANCE.attach(context, tracingContext.with(span));
+    VertxContextStorageProvider.VertxContextStorage.INSTANCE.attach(context, tracingContext.with(span));
+
+    return span;
   }
 
   @Override
   public <R> void sendResponse(
     final Context context,
     final R response,
-    final Scope scope,
+    final Span span,
     final Throwable failure,
     final TagExtractor<R> tagExtractor) {
-
-    if (scope == null) {
-      return;
+    if (span != null) {
+      context.remove(ACTIVE_CONTEXT);
+      end(span, response, tagExtractor, failure);
     }
+  }
 
-    Span span = Span.fromContext(context.getLocal(ACTIVE_CONTEXT));
-
+  private static <R> void end(Span span, R response, TagExtractor<R> tagExtractor, Throwable failure) {
     if (failure != null) {
       span.recordException(failure);
     }
@@ -100,11 +97,10 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
     }
 
     span.end();
-    scope.close();
   }
 
   @Override
-  public <R> Scope sendRequest(
+  public <R> Span sendRequest(
     final Context context,
     final SpanKind kind,
     final TracingPolicy policy,
@@ -136,17 +132,19 @@ class OpenTelemetryTracer implements VertxTracer<Scope, Scope> {
     tracingContext = tracingContext.with(span);
     propagators.getTextMapPropagator().inject(tracingContext, headers, setter);
 
-    return VertxContextStorageProvider.VertxContextStorage.INSTANCE.attach(context, tracingContext);
+    return span;
   }
 
   @Override
   public <R> void receiveResponse(
     final Context context,
     final R response,
-    final Scope scope,
+    final Span span,
     final Throwable failure,
     final TagExtractor<R> tagExtractor) {
-    this.sendResponse(context, response, scope, failure, tagExtractor);
+    if (span != null) {
+      end(span, response, tagExtractor, failure);
+    }
   }
 
 }
