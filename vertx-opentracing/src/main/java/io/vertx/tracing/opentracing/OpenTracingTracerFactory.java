@@ -17,6 +17,8 @@ import io.vertx.core.tracing.TracingOptions;
 
 public class OpenTracingTracerFactory implements VertxTracerFactory {
 
+  static final OpenTracingTracerFactory INSTANCE = new OpenTracingTracerFactory();
+
   @Override
   public VertxTracer tracer(TracingOptions options) {
     OpenTracingOptions openTracingOptions;

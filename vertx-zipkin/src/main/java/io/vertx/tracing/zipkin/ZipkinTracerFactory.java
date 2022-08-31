@@ -16,6 +16,8 @@ import io.vertx.core.tracing.TracingOptions;
 
 public class ZipkinTracerFactory implements VertxTracerFactory {
 
+  static final ZipkinTracerFactory INSTANCE = new ZipkinTracerFactory();
+
   @Override
   public ZipkinTracer tracer(TracingOptions options) {
     ZipkinTracingOptions zipkinOptions;
