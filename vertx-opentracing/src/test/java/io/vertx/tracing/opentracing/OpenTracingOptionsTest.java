@@ -12,9 +12,13 @@
 package io.vertx.tracing.opentracing;
 
 import io.opentracing.mock.MockTracer;
+import io.vertx.core.spi.VertxTracerFactory;
 import io.vertx.core.tracing.TracingOptions;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -28,5 +32,20 @@ public class OpenTracingOptionsTest {
     assertTrue(copy instanceof OpenTracingOptions);
     OpenTracingOptions other = (OpenTracingOptions) copy;
     assertSame(tracer, other.getTracer());
+  }
+
+  @Test
+  public void testDefaultFactory() {
+    TracingOptions options = new OpenTracingOptions();
+    assertNotNull(options.getFactory());
+    assertEquals(OpenTracingTracerFactory.INSTANCE, options.getFactory());
+  }
+
+  @Test
+  public void testFactory() {
+    TracingOptions options = new OpenTracingOptions().setFactory(VertxTracerFactory.NOOP);
+    assertNotNull(options.getFactory());
+    assertNotEquals(OpenTracingTracerFactory.INSTANCE, options.getFactory());
+    assertEquals(VertxTracerFactory.NOOP, options.getFactory());
   }
 }

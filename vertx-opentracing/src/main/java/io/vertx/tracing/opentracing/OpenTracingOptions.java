@@ -21,18 +21,22 @@ public class OpenTracingOptions extends TracingOptions {
   private Tracer tracer;
 
   public OpenTracingOptions() {
+    this.setFactory(OpenTracingTracerFactory.INSTANCE);
   }
 
   public OpenTracingOptions(Tracer tracer) {
     this.tracer = tracer;
+    this.setFactory(OpenTracingTracerFactory.INSTANCE);
   }
 
   public OpenTracingOptions(OpenTracingOptions other) {
     tracer = other.tracer;
+    this.setFactory(OpenTracingTracerFactory.INSTANCE);
   }
 
   public OpenTracingOptions(JsonObject json) {
     super(json);
+    this.setFactory(OpenTracingTracerFactory.INSTANCE);
   }
 
   @Override

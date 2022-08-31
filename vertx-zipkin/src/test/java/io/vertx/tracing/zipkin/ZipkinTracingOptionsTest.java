@@ -11,10 +11,13 @@
 
 package io.vertx.tracing.zipkin;
 
+import io.vertx.core.spi.VertxTracerFactory;
 import io.vertx.core.tracing.TracingOptions;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class ZipkinTracingOptionsTest {
@@ -36,5 +39,20 @@ public class ZipkinTracingOptionsTest {
     ZipkinTracer tracer = factory.tracer(new TracingOptions(options.toJson()));
     VertxSender sender = tracer.sender();
     assertEquals(senderOptions.toJson(), sender.options().toJson());
+  }
+
+  @Test
+  public void testDefaultFactory() {
+    TracingOptions options = new ZipkinTracingOptions();
+    assertNotNull(options.getFactory());
+    assertEquals(ZipkinTracerFactory.INSTANCE, options.getFactory());
+  }
+
+  @Test
+  public void testFactory() {
+    TracingOptions options = new ZipkinTracingOptions().setFactory(VertxTracerFactory.NOOP);
+    assertNotNull(options.getFactory());
+    assertNotEquals(ZipkinTracerFactory.INSTANCE, options.getFactory());
+    assertEquals(VertxTracerFactory.NOOP, options.getFactory());
   }
 }

@@ -36,13 +36,16 @@ public class ZipkinTracingOptions extends TracingOptions {
 
   public ZipkinTracingOptions(HttpTracing httpTracing) {
     this.httpTracing = httpTracing;
+    this.setFactory(ZipkinTracerFactory.INSTANCE);
   }
 
   public ZipkinTracingOptions(Tracing tracing) {
     this.httpTracing = HttpTracing.newBuilder(tracing).build();
+    this.setFactory(ZipkinTracerFactory.INSTANCE);
   }
 
   public ZipkinTracingOptions() {
+    this.setFactory(ZipkinTracerFactory.INSTANCE);
   }
 
   public ZipkinTracingOptions(ZipkinTracingOptions other) {
@@ -50,11 +53,13 @@ public class ZipkinTracingOptions extends TracingOptions {
     this.supportsJoin = other.supportsJoin;
     this.senderOptions = other.senderOptions == null ? null : new HttpSenderOptions(other.senderOptions);
     this.httpTracing = other.httpTracing == null ? null : other.httpTracing.toBuilder().build();
+    this.setFactory(ZipkinTracerFactory.INSTANCE);
   }
 
   public ZipkinTracingOptions(JsonObject json) {
     super(json);
     ZipkinTracingOptionsConverter.fromJson(json, this);
+    this.setFactory(ZipkinTracerFactory.INSTANCE);
   }
 
   @Override
