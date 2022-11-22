@@ -36,7 +36,6 @@
     <doc.skip>true</doc.skip>
     <jar.manifest>${project.basedir}/src/main/resources/META-INF/MANIFEST.MF</jar.manifest>
     <testcontainers.version>1.17.5</testcontainers.version>
-    <pgcontainer.version>1.15.2</pgcontainer.version>
   </properties>
 
   <dependencyManagement>
@@ -80,7 +79,7 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>postgresql</artifactId>
-      <version>${pgcontainer.version}</version>
+      <version>${testcontainers.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
