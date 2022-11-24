@@ -122,13 +122,20 @@ public class ZipkinTracingOptions extends TracingOptions {
   }
 
   /**
-   * Set the Zipkin Sampler
+   * @return the Zipkin Sampler
+   */
+  public Sampler getSampler() {
+    return sampler;
+  }
+
+  /**
+   * Set the Zipkin Sampler.
    *
-   * @param sample the options
+   * @param sampler the options
    * @return this instance
    */
-  public ZipkinTracingOptions setSample(Sampler sample) {
-    this.sampler = sample;
+  public ZipkinTracingOptions setSampler(Sampler sampler) {
+    this.sampler = sampler;
     return this;
   }
 
