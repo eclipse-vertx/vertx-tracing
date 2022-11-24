@@ -15,12 +15,9 @@ import brave.http.HttpTracing;
 import brave.sampler.Sampler;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.spi.tracing.VertxTracer;
 import io.vertx.core.tracing.TracingOptions;
 import zipkin2.reporter.AsyncReporter;
-import zipkin2.reporter.Sender;
 
-import java.io.IOException;
 import java.util.Objects;
 
 @DataObject(generateConverter = true, publicConverter = false)
@@ -30,6 +27,7 @@ public class ZipkinTracingOptions extends TracingOptions {
   public static final boolean DEFAULT_SUPPORTS_JOIN = true;
 
   private String serviceName = DEFAULT_SERVICE_NAME;
+  private Sampler sampler = Sampler.ALWAYS_SAMPLE;
   private boolean supportsJoin = DEFAULT_SUPPORTS_JOIN;
   private HttpSenderOptions senderOptions = new HttpSenderOptions();
   private HttpTracing httpTracing;
@@ -50,6 +48,7 @@ public class ZipkinTracingOptions extends TracingOptions {
 
   public ZipkinTracingOptions(ZipkinTracingOptions other) {
     this.serviceName = other.serviceName;
+    this.sampler = other.sampler;
     this.supportsJoin = other.supportsJoin;
     this.senderOptions = other.senderOptions == null ? null : new HttpSenderOptions(other.senderOptions);
     this.httpTracing = other.httpTracing == null ? null : other.httpTracing.toBuilder().build();
@@ -123,6 +122,24 @@ public class ZipkinTracingOptions extends TracingOptions {
   }
 
   /**
+   * @return the Zipkin Sampler
+   */
+  public Sampler getSampler() {
+    return sampler;
+  }
+
+  /**
+   * Set the Zipkin Sampler.
+   *
+   * @param sampler the options
+   * @return this instance
+   */
+  public ZipkinTracingOptions setSampler(Sampler sampler) {
+    this.sampler = sampler;
+    return this;
+  }
+
+  /**
    * Build the tracer and return it.
    */
   public ZipkinTracer buildTracer() {
@@ -136,7 +153,7 @@ public class ZipkinTracingOptions extends TracingOptions {
         .supportsJoin(supportsJoin)
         .localServiceName(localServiceName)
         .spanReporter(AsyncReporter.builder(sender).build())
-        .sampler(Sampler.ALWAYS_SAMPLE)
+        .sampler(sampler)
         .build();
       return new ZipkinTracer(true, tracing, sender);
     } else {
