@@ -13,7 +13,9 @@
   ~      http://www.opensource.org/licenses/apache2.0.php
   ~
   ~  You may elect to redistribute this code under either of these licenses.
-  --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
@@ -33,6 +35,7 @@
     <stack.version>4.4.0-SNAPSHOT</stack.version>
     <doc.skip>true</doc.skip>
     <jar.manifest>${project.basedir}/src/main/resources/META-INF/MANIFEST.MF</jar.manifest>
+    <testcontainers.version>1.15.2</testcontainers.version>
   </properties>
 
   <dependencyManagement>
@@ -76,8 +79,13 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>postgresql</artifactId>
-      <version>1.15.2</version>
+      <version>${testcontainers.version}</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <version>${testcontainers.version}</version>
     </dependency>
 
   </dependencies>

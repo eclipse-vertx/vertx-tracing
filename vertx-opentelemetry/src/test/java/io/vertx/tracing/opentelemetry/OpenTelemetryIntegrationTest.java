@@ -30,6 +30,7 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.tracing.TracingPolicy;
+import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.junit.jupiter.api.AfterEach;
@@ -112,7 +113,7 @@ public class OpenTelemetryIntegrationTest {
     if (createTrace) {
       sendRequestWithTrace();
     } else {
-      sendRequest();
+      sendRequest(ctx);
     }
 
     if (expectTrace) {
@@ -167,7 +168,7 @@ public class OpenTelemetryIntegrationTest {
     if (createTrace) {
       sendRequestWithTrace();
     } else {
-      sendRequest();
+      sendRequest(ctx);
     }
 
     if (expectedTrace > 0) {
@@ -222,7 +223,7 @@ public class OpenTelemetryIntegrationTest {
 
     Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS));
 
-    sendRequest();
+    sendRequest(ctx);
 
     List<SpanData> spans = otelTesting.getSpans();
     List<SpanData> serverSpans = spans.stream().filter(span -> span.getKind() == SpanKind.SERVER).collect(Collectors.toList());
@@ -236,11 +237,16 @@ public class OpenTelemetryIntegrationTest {
     ctx.completeNow();
   }
 
-  private void sendRequest() throws IOException {
+  private void sendRequest(VertxTestContext context) throws IOException {
+    Checkpoint checkpoint = context.checkpoint();
     URL url = new URL("http://localhost:8080");
     HttpURLConnection con = (HttpURLConnection) url.openConnection();
     con.setRequestMethod("GET");
-    assertThat(con.getResponseCode()).isEqualTo(200);
+    context.verify(()->{
+      assertThat(con.getResponseCode()).isEqualTo(200);
+      checkpoint.flag();
+    });
+
   }
 
   private void sendRequestWithTrace() throws IOException, ExecutionException, InterruptedException {
