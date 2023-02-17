@@ -101,7 +101,9 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
       if (failure != null) {
         reportFailure(span, failure);
       }
-      reportTags(span, response, tagExtractor);
+      if (response != null) {
+        reportTags(span, response, tagExtractor);
+      }
       span.finish();
     }
   }
@@ -151,7 +153,9 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
       if (failure != null) {
         reportFailure(span, failure);
       }
-      reportTags(span, response, tagExtractor);
+      if (response != null) {
+        reportTags(span, response, tagExtractor);
+      }
       span.finish();
     }
   }
