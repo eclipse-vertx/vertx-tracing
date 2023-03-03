@@ -9,5 +9,5 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  */
 
-@io.vertx.codegen.annotations.ModuleGen(name = "vertx-opentracing", groupPackage = "io.vertx")
+@io.vertx.codegen.annotations.ModuleGen(name = "vertx-opentracing", groupPackage = "io.vertx", useFutures = true, checkCallbackDeprecation = true)
 package io.vertx.tracing.opentracing;
