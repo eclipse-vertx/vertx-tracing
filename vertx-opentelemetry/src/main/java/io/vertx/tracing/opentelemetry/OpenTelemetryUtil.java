@@ -4,12 +4,16 @@ import io.opentelemetry.api.trace.Span;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
+/**
+ * OpenTracingContext adds helpers for associating and disassociating spans with the current {@link
+ * Context}
+ */
 public final class OpenTelemetryUtil {
   static final String ACTIVE_SPAN = "vertx.tracing.opentelemetry.span";
 
   /**
-   * Get the active span from the current context
-   *
+   * Get the active span from the current {@link Context}
+   * and return a {@link Span} or null
    */
 
   public static Span getSpan() {
