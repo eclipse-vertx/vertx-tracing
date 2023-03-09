@@ -19,27 +19,30 @@ import io.opentelemetry.exporter.logging.LoggingSpanExporter;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.vertx.tracing.opentelemetry.OpenTelemetryUtil.ACTIVE_SPAN;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 
-@RunWith(VertxUnitRunner.class)
+@ExtendWith(VertxExtension.class)
 public class OpenTelemetryUtilTest {
   private static Vertx vertx;
 
 
   private static SdkTracerProvider sdkTracerProvider;
 
-  private Span span;
+  private static Span span;
+
+  private static TestSpanData testSpanData;
 
   private static final long START_EPOCH_NANOS = TimeUnit.SECONDS.toNanos(3000) + 200;
+
   private static final long END_EPOCH_NANOS = TimeUnit.SECONDS.toNanos(3001) + 255;
 
   private static final String FIRST_TRACE_ID = "00000000000000000000000000000061";
@@ -49,34 +52,17 @@ public class OpenTelemetryUtilTest {
   private static final TraceState FIRST_TRACE_STATE =
     TraceState.builder().put("foo", "bar").build();
 
- @Before
- public void setup() {
+  @BeforeAll
+  public static void setup() {
 
-     sdkTracerProvider = SdkTracerProvider.builder()
-       .addSpanProcessor(SimpleSpanProcessor.create(new LoggingSpanExporter()))
-       .build();
-     span = sdkTracerProvider.tracerBuilder(ACTIVE_SPAN)
-       .build()
-       .spanBuilder("span")
-       .startSpan();
-
-     OpenTelemetry openTelemetry = OpenTelemetrySdk.builder()
-       .setTracerProvider(sdkTracerProvider)
-       .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
-       .buildAndRegisterGlobal();
-
-     vertx = Vertx.vertx(new VertxOptions()
-                           .setTracingOptions(new OpenTelemetryOptions(openTelemetry))
-     );
-
- }
-  @After
-  public void after(TestContext ctx) {
-    vertx.close(ctx.asyncAssertSuccess());
-  }
-  @Test
-  public void getSpan_from_context() {
-    TestSpanData testSpanData = TestSpanData.builder()
+    sdkTracerProvider = SdkTracerProvider.builder()
+      .addSpanProcessor(SimpleSpanProcessor.create(new LoggingSpanExporter()))
+      .build();
+    span = sdkTracerProvider.tracerBuilder(ACTIVE_SPAN)
+      .build()
+      .spanBuilder("span")
+      .startSpan();
+    testSpanData = TestSpanData.builder()
       .setHasEnded(true)
       .setName("spanName")
       .setStartEpochNanos(START_EPOCH_NANOS)
@@ -87,12 +73,46 @@ public class OpenTelemetryUtilTest {
       .setTotalRecordedEvents(0)
       .setTotalRecordedLinks(0).build();
     span.setAllAttributes(testSpanData.getAttributes());
+    OpenTelemetry openTelemetry = OpenTelemetrySdk.builder()
+      .setTracerProvider(sdkTracerProvider)
+      .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+      .buildAndRegisterGlobal();
 
-    vertx.runOnContext(handler ->{
+    vertx = Vertx.vertx(new VertxOptions()
+                          .setTracingOptions(new OpenTelemetryOptions(openTelemetry))
+    );
+
+  }
+
+  @AfterAll
+  public static void tearDown(VertxTestContext vertxTestContext) {
+    vertx.close(vertxTestContext.succeedingThenComplete());
+  }
+
+  @Test
+  public void getSpan_from_context(VertxTestContext vertxTestContext) {
+
+    vertx.runOnContext(handler -> {
+
       assertNull(OpenTelemetryUtil.getSpan());
       Context context = Vertx.currentContext();
       context.putLocal(ACTIVE_SPAN, span);
       assertSame(span, OpenTelemetryUtil.getSpan());
+      OpenTelemetryUtil.clearContext();
+      vertxTestContext.completeNow();
+    });
+  }
+
+  @Test
+  public void setSpan_onContext(VertxTestContext vertxTestContext) {
+    vertx.runOnContext(ignored -> {
+      assertNull(OpenTelemetryUtil.getSpan());
+      OpenTelemetryUtil.setSpan(span);
+
+      Context context = Vertx.currentContext();
+      assertSame(span, context.getLocal(ACTIVE_SPAN));
+      OpenTelemetryUtil.clearContext();
+      vertxTestContext.completeNow();
     });
   }
 }
