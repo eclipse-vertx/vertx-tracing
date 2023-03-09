@@ -1,6 +1,7 @@
 = Tracing for Vert.x 4
 
-image:https://github.com/eclipse-vertx/vertx-tracing/workflows/CI/badge.svg?branch=master["Build Status", link="https://github.com/eclipse-vertx/vertx-tracing/actions?query=workflow%3ACI"]
+image:https://github.com/eclipse-vertx/vertx-tracing/actions/workflows/ci-5.x.yml/badge.svg["Build Status (5.x)",link="https://github.com/eclipse-vertx/vertx-tracing/actions/workflows/ci-5.x.yml"]
+image:https://github.com/eclipse-vertx/vertx-tracing/actions/workflows/ci-4.x.yml/badge.svg["Build Status (4.x)",link="https://github.com/eclipse-vertx/vertx-tracing/actions/workflows/ci-4.x.yml"]
 image:https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg?style=flat["GitHub license",link="http://www.apache.org/licenses/LICENSE-2.0"]
 
 This is the repository for Vert.x tracing SPI implementations.
