@@ -12,6 +12,7 @@ package io.vertx.tracing.opentelemetry;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.vertx.core.Context;
@@ -28,6 +29,8 @@ import java.io.Serializable;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static io.vertx.tracing.opentelemetry.VertxContextStorageProvider.ACTIVE_CONTEXT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -97,6 +100,46 @@ public class OpenTelemetryTracingFactoryTest {
 
     final io.opentelemetry.context.Context tracingContext = ctx.getLocal(ACTIVE_CONTEXT);
     assertThat(tracingContext).isNotNull();
+  }
+
+  @Test
+  public void receiveRequestShouldReturnAParentedSpanIfPolicyIsPropagateAndTheOtelContextHasAnOngoingSpan(final Vertx vertx) throws ExecutionException, InterruptedException {
+    final OpenTelemetry openTelemetry = OpenTelemetry.propagating(
+      ContextPropagators.create(W3CTraceContextPropagator.getInstance())
+    );
+
+    final Tracer otelTracer = openTelemetry.getTracer("example-lib");
+
+    final Span parentSpan = otelTracer.spanBuilder("example-span")
+      .startSpan();
+
+    CompletableFuture<Span> futureSpan = new CompletableFuture<>();
+
+    vertx.runOnContext(unused -> {
+      parentSpan.makeCurrent();
+
+      final VertxTracer<Span, Span> tracer = new OpenTelemetryOptions(openTelemetry).buildTracer();
+
+      final Span span = tracer.receiveRequest(
+        vertx.getOrCreateContext(),
+        SpanKind.MESSAGING,
+        TracingPolicy.PROPAGATE,
+        null,
+        "",
+        Collections.emptyList(),
+        TagExtractor.empty()
+      );
+
+      parentSpan.end();
+
+      futureSpan.complete(span);
+    });
+
+    Span span = futureSpan.get();
+
+    assertThat(span).isNotNull();
+    assertThat(span.getSpanContext().getTraceId())
+      .isEqualTo(parentSpan.getSpanContext().getTraceId());
   }
 
   @Test
