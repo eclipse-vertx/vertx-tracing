@@ -70,7 +70,7 @@ public class ZipkinHttpTest extends ZipkinBaseTest {
     Async listenLatch = ctx.async();
     vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(policy)).requestHandler(req -> {
       req.response().end();
-    }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.complete()));
+    }).listen(8080).onComplete(ctx.asyncAssertSuccess(v -> listenLatch.complete()));
     listenLatch.awaitSuccess();
     sendRequest(withTrace);
     if (expectedSpans > 0) {
@@ -210,18 +210,18 @@ public class ZipkinHttpTest extends ZipkinBaseTest {
     Async listenLatch = ctx.async(2);
     HttpClient c = vertx.createHttpClient(new HttpClientOptions().setTracingPolicy(policy));
     vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.PROPAGATE)).requestHandler(req -> {
-      c.request(HttpMethod.GET, 8081, "localhost", "/", ctx.asyncAssertSuccess(clientReq -> {
-        clientReq.send(ctx.asyncAssertSuccess(clientResp -> {
+      c.request(HttpMethod.GET, 8081, "localhost", "/").onComplete(ctx.asyncAssertSuccess(clientReq -> {
+        clientReq.send().onComplete(ctx.asyncAssertSuccess(clientResp -> {
           req.response().end();
         }));
       }));
-    }).listen(8080, ar -> {
+    }).listen(8080).onComplete(ar -> {
       ctx.assertTrue(ar.succeeded(), "Could not bind on port 8080");
       listenLatch.countDown();
     });
     vertx.createHttpServer().requestHandler(req -> {
       req.response().end();
-    }).listen(8081, ar -> {
+    }).listen(8081).onComplete(ar -> {
       ctx.assertTrue(ar.succeeded(), "Could not bind on port 8081");
       listenLatch.countDown();
     });

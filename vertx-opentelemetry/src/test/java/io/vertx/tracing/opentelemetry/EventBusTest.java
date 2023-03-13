@@ -48,7 +48,7 @@ public class EventBusTest {
 
   @AfterEach
   public void tearDown(VertxTestContext context) throws Exception {
-    vertx.close(context.succeedingThenComplete());
+    vertx.close().onComplete(context.succeedingThenComplete());
   }
 
   @Test
@@ -71,9 +71,9 @@ public class EventBusTest {
       vertx.eventBus().send(ADDRESS, "ping", new DeliveryOptions().setTracingPolicy(policy));
       return Future.succeededFuture();
     });
-    vertx.deployVerticle(producerVerticle, ctx.succeeding(d1 -> {
+    vertx.deployVerticle(producerVerticle).onComplete(ctx.succeeding(d1 -> {
       Promise<Void> consumerPromise = Promise.promise();
-      vertx.deployVerticle(new ConsumerVerticle(consumerPromise), ctx.succeeding(d2 ->
+      vertx.deployVerticle(new ConsumerVerticle(consumerPromise)).onComplete(ctx.succeeding(d2 ->
         client.request(HttpMethod.GET, "/")
           .compose(HttpClientRequest::send)
           .compose(HttpClientResponse::body)
@@ -139,8 +139,8 @@ public class EventBusTest {
         vertx.deployVerticle(consumerVerticle1),
         vertx.deployVerticle(consumerVerticle2)
       )).onSuccess(v ->
-        client.request(HttpMethod.GET, "/", ctx.succeeding(req ->
-          req.send(ctx.succeeding(resp -> {
+        client.request(HttpMethod.GET, "/").onComplete(ctx.succeeding(req ->
+          req.send().onComplete(ctx.succeeding(resp -> {
             ctx.verify(() -> assertThat(resp.statusCode()).isEqualTo(200));
             ctx.assertComplete(CompositeFuture.all(consumer1Promise.future(), consumer2Promise.future()))
               .onSuccess(v1 -> {
@@ -200,7 +200,7 @@ public class EventBusTest {
   private void testRequestReply(VertxTestContext ctx, TracingPolicy policy, boolean fail, int expected) {
     ProducerVerticle producerVerticle = new ProducerVerticle(getHttpServerPolicy(policy), vertx -> {
       Promise<Void> promise = Promise.promise();
-      vertx.eventBus().request(ADDRESS, "ping", new DeliveryOptions().setTracingPolicy(policy), ar -> {
+      vertx.eventBus().request(ADDRESS, "ping", new DeliveryOptions().setTracingPolicy(policy)).onComplete(ar -> {
         if (ar.failed() == fail) {
           vertx.runOnContext(v -> promise.complete());
         } else {
@@ -209,10 +209,10 @@ public class EventBusTest {
       });
       return promise.future();
     });
-    vertx.deployVerticle(producerVerticle, ctx.succeeding(d1 -> {
-      vertx.deployVerticle(new ReplyVerticle(fail), ctx.succeeding(d2 -> {
-        client.request(HttpMethod.GET, "/", ctx.succeeding(req -> {
-          req.send(ctx.succeeding(resp -> {
+    vertx.deployVerticle(producerVerticle).onComplete(ctx.succeeding(d1 -> {
+      vertx.deployVerticle(new ReplyVerticle(fail)).onComplete(ctx.succeeding(d2 -> {
+        client.request(HttpMethod.GET, "/").onComplete(ctx.succeeding(req -> {
+          req.send().onComplete(ctx.succeeding(resp -> {
             ctx.verify(() -> {
               assertThat(resp.statusCode()).isEqualTo(200);
               int count = 0;
@@ -279,7 +279,7 @@ public class EventBusTest {
     public void start(Promise<Void> startPromise) {
       vertx.eventBus().consumer(ADDRESS, msg -> {
         vertx.runOnContext(v -> promise.complete());
-      }).completionHandler(startPromise);
+      }).completion().onComplete(startPromise);
     }
   }
 
@@ -299,7 +299,7 @@ public class EventBusTest {
         } else {
           msg.reply(msg.body());
         }
-      }).completionHandler(startPromise);
+      }).completion().onComplete(startPromise);
     }
   }
 }

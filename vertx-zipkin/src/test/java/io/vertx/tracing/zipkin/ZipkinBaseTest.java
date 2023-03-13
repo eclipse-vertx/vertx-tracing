@@ -60,7 +60,7 @@ public abstract class ZipkinBaseTest {
   @After
   public void after(TestContext ctx) {
     client.close();
-    vertx.close(ctx.asyncAssertSuccess());
+    vertx.close().onComplete(ctx.asyncAssertSuccess());
   }
 
   List<Span> waitUntilTrace(int min) throws Exception {

@@ -9,7 +9,7 @@ public class ServerVerticle extends AbstractVerticle {
   public void start(Promise<Void> startPromise) throws Exception {
     vertx.createHttpServer().requestHandler(httpServerRequest -> {
       httpServerRequest.response().end("Hello from the Server");
-    }).listen(8080, httpServerAsyncResult -> {
+    }).listen(8080).onComplete(httpServerAsyncResult -> {
       if (httpServerAsyncResult.succeeded()) {
         startPromise.complete();
       } else {

@@ -88,17 +88,17 @@ public class ZipkinHttpClientITTest extends ITHttpAsyncClient<HttpClient> {
         }
       };
       if (body == null) {
-        client.request(new RequestOptions().setURI(pathIncludingQuery).setFollowRedirects(true), ar -> {
+        client.request(new RequestOptions().setURI(pathIncludingQuery).setFollowRedirects(true)).onComplete(ar -> {
           if (ar.succeeded()) {
-            ar.result().send(handler);
+            ar.result().send().onComplete(handler);
           } else {
             handler.handle(Future.failedFuture(ar.cause()));
           }
         });
       } else {
-        client.request(HttpMethod.POST, pathIncludingQuery, ar -> {
+        client.request(HttpMethod.POST, pathIncludingQuery).onComplete(ar -> {
           if (ar.succeeded()) {
-            ar.result().send(Buffer.buffer(body), handler);
+            ar.result().send(Buffer.buffer(body)).onComplete(handler);
           } else {
             handler.handle(Future.failedFuture(ar.cause()));
           }
@@ -139,7 +139,7 @@ public class ZipkinHttpClientITTest extends ITHttpAsyncClient<HttpClient> {
   public void close() throws Exception {
     if (vertx != null) {
       CountDownLatch latch = new CountDownLatch(1);
-      vertx.close(ar -> {
+      vertx.close().onComplete(ar -> {
         latch.countDown();
       });
       latch.await(10, TimeUnit.SECONDS);
