@@ -38,7 +38,7 @@ public class ZipkinHttpServerITTest extends ITHttpServer implements Handler<Http
     vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new ZipkinTracingOptions(httpTracing)));
     server = vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.ALWAYS)).requestHandler(this);
     CompletableFuture<Integer> fut = new CompletableFuture<>();
-    server.listen(0, "localhost", ar -> {
+    server.listen(0, "localhost").onComplete(ar -> {
       if (ar.succeeded()) {
         fut.complete(ar.result().actualPort());
       } else {
@@ -125,7 +125,7 @@ public class ZipkinHttpServerITTest extends ITHttpServer implements Handler<Http
   public void stop() throws Exception {
     if (vertx != null) {
       CountDownLatch latch = new CountDownLatch(1);
-      vertx.close(ar -> {
+      vertx.close().onComplete(ar -> {
         latch.countDown();
       });
       latch.await(10, TimeUnit.SECONDS);

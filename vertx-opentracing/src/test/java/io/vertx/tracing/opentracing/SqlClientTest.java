@@ -77,7 +77,7 @@ public class SqlClientTest {
 
   @After
   public void after(TestContext ctx) {
-    vertx.close(ctx.asyncAssertSuccess());
+    vertx.close().onComplete(ctx.asyncAssertSuccess());
   }
 
   List<MockSpan> waitUntil(int expected) throws Exception {
@@ -114,12 +114,12 @@ public class SqlClientTest {
             }
           });
         });
-    }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.complete()));
+    }).listen(8080).onComplete(ctx.asyncAssertSuccess(v -> listenLatch.complete()));
     listenLatch.awaitSuccess();
     Async responseLatch = ctx.async();
     HttpClient client = vertx.createHttpClient(new HttpClientOptions().setTracingPolicy(TracingPolicy.ALWAYS));
-    client.request(HttpMethod.GET, 8080, "localhost", "/", ctx.asyncAssertSuccess(req -> {
-      req.send(ctx.asyncAssertSuccess(resp -> {
+    client.request(HttpMethod.GET, 8080, "localhost", "/").onComplete(ctx.asyncAssertSuccess(req -> {
+      req.send().onComplete(ctx.asyncAssertSuccess(resp -> {
         ctx.assertEquals(200, resp.statusCode());
         responseLatch.complete();
       }));

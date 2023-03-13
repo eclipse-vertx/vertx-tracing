@@ -64,7 +64,7 @@ public class CustomTracingIT {
           new OpenTracingOptions(tracer))
       );
       WebClient webClient = WebClient.create(tracedVertx);
-      tracedVertx.deployVerticle(ServerVerticle.class.getName(), context.succeeding(id -> {
+      tracedVertx.deployVerticle(ServerVerticle.class.getName()).onComplete(context.succeeding(id -> {
         webClient.get(8080,"localhost","/health")
           .send(context.succeeding(bufferHttpResponse -> {
             context.verify(() ->{
@@ -81,7 +81,7 @@ public class CustomTracingIT {
   public static void cleanUp() {
     tracer.close();
     JAEGER_ALL_IN_ONE.stop();
-    tracedVertx.close(result -> {
+    tracedVertx.close().onComplete(result -> {
       if (result.succeeded()) LOGGER.debug("Closing traced vertx OK.");
       else LOGGER.error("Closing traced vertx FAILED: " + result.cause());
     });

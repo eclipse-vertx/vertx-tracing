@@ -52,7 +52,7 @@ public class OpenTracingTest {
 
   @After
   public void after(TestContext ctx) {
-    vertx.close(ctx.asyncAssertSuccess());
+    vertx.close().onComplete(ctx.asyncAssertSuccess());
   }
 
   List<MockSpan> waitUntil(int expected) throws Exception {
@@ -111,7 +111,7 @@ public class OpenTracingTest {
         ctx.assertNull(Vertx.currentContext().getLocal(OpenTracingUtil.ACTIVE_SPAN));
       }
       req.response().end();
-    }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
+    }).listen(8080).onComplete(ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
     listenLatch.awaitSuccess();
     sendRequest(createTrace);
     if (expectTrace) {
@@ -158,15 +158,15 @@ public class OpenTracingTest {
     Async listenLatch = ctx.async(2);
     HttpClient c = vertx.createHttpClient(new HttpClientOptions().setTracingPolicy(policy));
     vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.PROPAGATE)).requestHandler(req -> {
-      c.request(HttpMethod.GET, 8081, "localhost", "/", ctx.asyncAssertSuccess(clientReq -> {
-        clientReq.send(ctx.asyncAssertSuccess(clientResp -> {
+      c.request(HttpMethod.GET, 8081, "localhost", "/").onComplete(ctx.asyncAssertSuccess(clientReq -> {
+        clientReq.send().onComplete(ctx.asyncAssertSuccess(clientResp -> {
           req.response().end();
         }));
       }));
-    }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
+    }).listen(8080).onComplete(ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
     vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.PROPAGATE)).requestHandler(req -> {
       req.response().end();
-    }).listen(8081, ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
+    }).listen(8081).onComplete(ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
     listenLatch.awaitSuccess();
     sendRequest(createTrace);
     Thread.sleep(1000);
@@ -210,16 +210,16 @@ public class OpenTracingTest {
   public void testEventBus(TestContext ctx) throws Exception {
     Async listenLatch = ctx.async(2);
     vertx.createHttpServer().requestHandler(req -> {
-      vertx.eventBus().request("the-address", "ping", ctx.asyncAssertSuccess(resp -> {
+      vertx.eventBus().request("the-address", "ping").onComplete(ctx.asyncAssertSuccess(resp -> {
         req.response().end();
       }));
-    }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
+    }).listen(8080).onComplete(ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
     vertx.eventBus().consumer("the-address", msg -> {
       msg.reply("pong");
     });
     vertx.createHttpServer().requestHandler(req -> {
       req.response().end();
-    }).listen(8081, ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
+    }).listen(8081).onComplete(ctx.asyncAssertSuccess(v -> listenLatch.countDown()));
     listenLatch.awaitSuccess();
     sendRequest(true);
     List<MockSpan> spans = waitUntil(3);

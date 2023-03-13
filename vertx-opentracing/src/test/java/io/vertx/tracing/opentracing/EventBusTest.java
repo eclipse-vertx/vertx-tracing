@@ -45,7 +45,7 @@ public class EventBusTest {
   @After
   public void after(TestContext context) {
     client.close();
-    vertx.close(context.asyncAssertSuccess());
+    vertx.close().onComplete(context.asyncAssertSuccess());
   }
 
   @Test
@@ -68,11 +68,11 @@ public class EventBusTest {
       vertx.eventBus().send(ADDRESS, "ping", new DeliveryOptions().setTracingPolicy(policy));
       return Future.succeededFuture();
     });
-    vertx.deployVerticle(producerVerticle, ctx.asyncAssertSuccess(d1 -> {
+    vertx.deployVerticle(producerVerticle).onComplete(ctx.asyncAssertSuccess(d1 -> {
       Promise<Void> consumerPromise = Promise.promise();
-      vertx.deployVerticle(new ConsumerVerticle(consumerPromise), ctx.asyncAssertSuccess(d2 -> {
-        client.request(HttpMethod.GET, "/", ctx.asyncAssertSuccess(req -> {
-          req.send(ctx.asyncAssertSuccess(resp -> {
+      vertx.deployVerticle(new ConsumerVerticle(consumerPromise)).onComplete(ctx.asyncAssertSuccess(d2 -> {
+        client.request(HttpMethod.GET, "/").onComplete(ctx.asyncAssertSuccess(req -> {
+          req.send().onComplete(ctx.asyncAssertSuccess(resp -> {
             ctx.assertEquals(200, resp.statusCode());
             consumerPromise.future().onComplete(ctx.asyncAssertSuccess(v -> {
               int count = 0;
@@ -116,13 +116,13 @@ public class EventBusTest {
       vertx.eventBus().publish(ADDRESS, "ping", new DeliveryOptions().setTracingPolicy(policy));
       return Future.succeededFuture();
     });
-    vertx.deployVerticle(producerVerticle, ctx.asyncAssertSuccess(d1 -> {
+    vertx.deployVerticle(producerVerticle).onComplete(ctx.asyncAssertSuccess(d1 -> {
       Promise<Void> consumer1Promise = Promise.promise();
       Promise<Void> consumer2Promise = Promise.promise();
-      vertx.deployVerticle(new ConsumerVerticle(consumer1Promise), ctx.asyncAssertSuccess(d2 -> {
-        vertx.deployVerticle(new ConsumerVerticle(consumer2Promise), ctx.asyncAssertSuccess(d3 -> {
-          client.request(HttpMethod.GET, "/", ctx.asyncAssertSuccess(req -> {
-            req.send(ctx.asyncAssertSuccess(resp -> {
+      vertx.deployVerticle(new ConsumerVerticle(consumer1Promise)).onComplete(ctx.asyncAssertSuccess(d2 -> {
+        vertx.deployVerticle(new ConsumerVerticle(consumer2Promise)).onComplete( ctx.asyncAssertSuccess(d3 -> {
+          client.request(HttpMethod.GET, "/").onComplete(ctx.asyncAssertSuccess(req -> {
+            req.send().onComplete(ctx.asyncAssertSuccess(resp -> {
               ctx.assertEquals(200, resp.statusCode());
               CompositeFuture.all(consumer1Promise.future(), consumer2Promise.future()).onComplete(ctx.asyncAssertSuccess(v -> {
                 int count = 0;
@@ -176,7 +176,7 @@ public class EventBusTest {
   private void testRequestReply(TestContext ctx, TracingPolicy policy, boolean fail, int expected) {
     ProducerVerticle producerVerticle = new ProducerVerticle(getHttpServerPolicy(policy), vertx -> {
       Promise<Void> promise = Promise.promise();
-      vertx.eventBus().request(ADDRESS, "ping", new DeliveryOptions().setTracingPolicy(policy), ar -> {
+      vertx.eventBus().request(ADDRESS, "ping", new DeliveryOptions().setTracingPolicy(policy)).onComplete(ar -> {
         if (ar.failed() == fail) {
           vertx.runOnContext(v -> promise.complete());
         } else {
@@ -185,10 +185,10 @@ public class EventBusTest {
       });
       return promise.future();
     });
-    vertx.deployVerticle(producerVerticle, ctx.asyncAssertSuccess(d1 -> {
-      vertx.deployVerticle(new ReplyVerticle(fail), ctx.asyncAssertSuccess(d2 -> {
-        client.request(HttpMethod.GET, "/", ctx.asyncAssertSuccess(req -> {
-          req.send(ctx.asyncAssertSuccess(resp -> {
+    vertx.deployVerticle(producerVerticle).onComplete(ctx.asyncAssertSuccess(d1 -> {
+      vertx.deployVerticle(new ReplyVerticle(fail)).onComplete(ctx.asyncAssertSuccess(d2 -> {
+        client.request(HttpMethod.GET, "/").onComplete(ctx.asyncAssertSuccess(req -> {
+          req.send().onComplete(ctx.asyncAssertSuccess(resp -> {
             ctx.assertEquals(200, resp.statusCode());
             int count = 0;
             for (MockSpan span : tracer.finishedSpans()) {
@@ -249,7 +249,7 @@ public class EventBusTest {
     public void start(Promise<Void> startPromise) {
       vertx.eventBus().consumer(ADDRESS, msg -> {
         vertx.runOnContext(v -> promise.complete());
-      }).completionHandler(startPromise);
+      }).completion().onComplete(startPromise);
     }
   }
 
@@ -269,7 +269,7 @@ public class EventBusTest {
         } else {
           msg.reply(msg.body());
         }
-      }).completionHandler(startPromise);
+      }).completion().onComplete(startPromise);
     }
   }
 }

@@ -53,12 +53,12 @@ public class ZipkinGenericPropagationTest extends ZipkinBaseTest {
         tracer.receiveResponse(current, response, trace, null, TagExtractor.empty());
         req.response().end();
       });
-    }).listen(8080, ctx.asyncAssertSuccess(v -> listenLatch.complete()));
+    }).listen(8080).onComplete(ctx.asyncAssertSuccess(v -> listenLatch.complete()));
     listenLatch.awaitSuccess();
     Async responseLatch = ctx.async();
     HttpClient client = vertx.createHttpClient(new HttpClientOptions().setTracingPolicy(TracingPolicy.ALWAYS));
-    client.request(HttpMethod.GET, 8080, "localhost", "/", ctx.asyncAssertSuccess(req -> {
-      req.send(ctx.asyncAssertSuccess(resp -> {
+    client.request(HttpMethod.GET, 8080, "localhost", "/").onComplete(ctx.asyncAssertSuccess(req -> {
+      req.send().onComplete(ctx.asyncAssertSuccess(resp -> {
         ctx.assertEquals(200, resp.statusCode());
         responseLatch.complete();
       }));

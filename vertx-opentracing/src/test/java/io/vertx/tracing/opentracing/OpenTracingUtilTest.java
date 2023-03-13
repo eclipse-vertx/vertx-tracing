@@ -40,7 +40,7 @@ public class OpenTracingUtilTest {
 
   @After
   public void after(TestContext ctx) {
-    vertx.close(ctx.asyncAssertSuccess());
+    vertx.close().onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test

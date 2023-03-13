@@ -46,7 +46,7 @@ public class HttpTest {
 
   @After
   public void after(TestContext context) {
-    vertx.close(context.asyncAssertSuccess());
+    vertx.close().onComplete(context.asyncAssertSuccess());
   }
 
   @Test
@@ -61,7 +61,7 @@ public class HttpTest {
     Async closedLatch = ctx.async();
     HttpClient client;
     client = vertx.createHttpClient(new HttpClientOptions().setDefaultPort(8080).setTracingPolicy(TracingPolicy.ALWAYS));
-    client.request(new RequestOptions().setPort(8080).setHost("localhost"), ctx.asyncAssertSuccess(req -> {
+    client.request(new RequestOptions().setPort(8080).setHost("localhost")).onComplete(ctx.asyncAssertSuccess(req -> {
       req.send();
       req.connection().closeHandler(v -> closedLatch.complete());
     }));

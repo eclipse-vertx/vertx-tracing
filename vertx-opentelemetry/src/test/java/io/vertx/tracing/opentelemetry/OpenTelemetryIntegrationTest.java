@@ -77,7 +77,7 @@ public class OpenTelemetryIntegrationTest {
 
   @AfterEach
   public void tearDown(VertxTestContext context) throws Exception {
-    vertx.close(context.succeedingThenComplete());
+    vertx.close().onComplete(context.succeedingThenComplete());
   }
 
   private static Stream<Arguments> testTracingPolicyArgs() {
@@ -151,17 +151,17 @@ public class OpenTelemetryIntegrationTest {
 
     // Proxy server
     vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.PROPAGATE)).requestHandler(req ->
-      c.request(HttpMethod.GET, 8081, "localhost", "/", ctx.succeeding(clientReq ->
-        clientReq.send(ctx.succeeding(clientResp ->
+      c.request(HttpMethod.GET, 8081, "localhost", "/").onComplete(ctx.succeeding(clientReq ->
+        clientReq.send().onComplete(ctx.succeeding(clientResp ->
           req.response().end()
         ))
       ))
-    ).listen(8080, ctx.succeeding(v -> latch.countDown()));
+    ).listen(8080).onComplete(ctx.succeeding(v -> latch.countDown()));
 
     // End server
     vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.PROPAGATE))
       .requestHandler(req -> req.response().end())
-      .listen(8081, ctx.succeeding(v -> latch.countDown()));
+      .listen(8081).onComplete(ctx.succeeding(v -> latch.countDown()));
 
     Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS));
 
@@ -288,10 +288,10 @@ public class OpenTelemetryIntegrationTest {
     vertx.eventBus().consumer("the-address", msg -> msg.reply("pong"));
 
     vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.PROPAGATE)).requestHandler(req ->
-      vertx.eventBus().request("the-address", "ping", ctx.succeeding(resp ->
+      vertx.eventBus().request("the-address", "ping").onComplete(ctx.succeeding(resp ->
         req.response().end()
       ))
-    ).listen(8080, ctx.succeeding(v -> latch.countDown()));
+    ).listen(8080).onComplete(ctx.succeeding(v -> latch.countDown()));
 
     Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS));
 
