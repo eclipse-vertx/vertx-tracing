@@ -55,7 +55,7 @@ class OpenTelemetryTracer implements VertxTracer<Span, Span> {
       return null;
     }
 
-    io.opentelemetry.context.Context tracingContext = propagators.getTextMapPropagator().extract(io.opentelemetry.context.Context.root(), headers, getter);
+    io.opentelemetry.context.Context tracingContext = propagators.getTextMapPropagator().extract(io.opentelemetry.context.Context.current(), headers, getter);
 
     // If no span, and policy is PROPAGATE, then don't create the span
     if (Span.fromContextOrNull(tracingContext) == null && TracingPolicy.PROPAGATE.equals(policy)) {
