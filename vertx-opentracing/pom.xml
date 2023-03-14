@@ -67,6 +67,7 @@
       <groupId>io.jaegertracing</groupId>
       <artifactId>jaeger-testcontainers</artifactId>
       <version>0.7.0</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
