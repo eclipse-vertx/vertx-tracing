@@ -14,7 +14,6 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.tracing.TracingPolicy;
-import io.vertx.ext.web.client.WebClient;
 import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -63,12 +62,13 @@ public class CustomTracingIT {
         new VertxOptions().setTracingOptions(
           new OpenTracingOptions(tracer))
       );
-      WebClient webClient = WebClient.create(tracedVertx);
+      HttpClient client = tracedVertx.createHttpClient();
       tracedVertx.deployVerticle(ServerVerticle.class.getName()).onComplete(context.succeeding(id -> {
-        webClient.get(8080,"localhost","/health")
-          .send(context.succeeding(bufferHttpResponse -> {
+        client.request(HttpMethod.GET, 8080,"localhost","/health")
+          .compose(req -> req.send().compose(resp -> resp.end().map(resp.statusCode()))).
+          onComplete(context.succeeding(sc -> {
             context.verify(() ->{
-              assertThat(bufferHttpResponse.statusCode()).isEqualTo(200);
+              assertThat(sc).isEqualTo(200);
               statusCheck.flag();
             });
           }));
