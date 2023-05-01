@@ -22,6 +22,7 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
@@ -210,7 +211,7 @@ public class OpenTelemetryIntegrationTest {
     ctx.assertComplete(
       vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.ALWAYS)).requestHandler(req -> {
         HttpClient client = vertx.createHttpClient(new HttpClientOptions().setTracingPolicy(TracingPolicy.PROPAGATE));
-        List<Future> futures = new ArrayList<>();
+        List<Future<Buffer>> futures = new ArrayList<>();
         for (int i = 0;i < num;i++) {
           futures.add(client.request(new RequestOptions().setPort(8081).setHost("localhost"))
             .compose(HttpClientRequest::send).compose(HttpClientResponse::body));
