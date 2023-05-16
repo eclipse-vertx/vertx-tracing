@@ -18,7 +18,6 @@ import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -216,7 +215,7 @@ public class OpenTelemetryIntegrationTest {
           futures.add(client.request(new RequestOptions().setPort(8081).setHost("localhost"))
             .compose(HttpClientRequest::send).compose(HttpClientResponse::body));
         }
-        CompositeFuture.all(futures).onComplete(ctx.succeeding(v -> {
+        Future.all(futures).onComplete(ctx.succeeding(v -> {
           req.response().end();
         }));
       }).listen(8080).onSuccess(v -> latch.countDown())

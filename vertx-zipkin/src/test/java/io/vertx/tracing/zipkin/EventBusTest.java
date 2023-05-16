@@ -118,7 +118,7 @@ public class EventBusTest extends ZipkinBaseTest {
           client.request(HttpMethod.GET, "/").onComplete(ctx.asyncAssertSuccess(req -> {
             req.send().onComplete(ctx.asyncAssertSuccess(resp -> {
               ctx.assertEquals(200, resp.statusCode());
-              CompositeFuture.all(consumer1Promise.future(), consumer2Promise.future()).onComplete(ctx.asyncAssertSuccess(v -> latch.complete()));
+              Future.all(consumer1Promise.future(), consumer2Promise.future()).onComplete(ctx.asyncAssertSuccess(v -> latch.complete()));
             }));
           }));
         }));

@@ -134,7 +134,7 @@ public class EventBusTest {
       ConsumerVerticle consumerVerticle1 = new ConsumerVerticle(consumer1Promise);
       ConsumerVerticle consumerVerticle2 = new ConsumerVerticle(consumer2Promise);
 
-      ctx.assertComplete(CompositeFuture.all(
+      ctx.assertComplete(Future.all(
         vertx.deployVerticle(producerVerticle),
         vertx.deployVerticle(consumerVerticle1),
         vertx.deployVerticle(consumerVerticle2)
@@ -142,7 +142,7 @@ public class EventBusTest {
         client.request(HttpMethod.GET, "/").onComplete(ctx.succeeding(req ->
           req.send().onComplete(ctx.succeeding(resp -> {
             ctx.verify(() -> assertThat(resp.statusCode()).isEqualTo(200));
-            ctx.assertComplete(CompositeFuture.all(consumer1Promise.future(), consumer2Promise.future()))
+            ctx.assertComplete(Future.all(consumer1Promise.future(), consumer2Promise.future()))
               .onSuccess(v1 -> {
                 ctx.verify(() -> {
                   int count = 0;

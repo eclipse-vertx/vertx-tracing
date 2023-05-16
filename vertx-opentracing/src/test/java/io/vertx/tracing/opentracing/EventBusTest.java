@@ -124,7 +124,7 @@ public class EventBusTest {
           client.request(HttpMethod.GET, "/").onComplete(ctx.asyncAssertSuccess(req -> {
             req.send().onComplete(ctx.asyncAssertSuccess(resp -> {
               ctx.assertEquals(200, resp.statusCode());
-              CompositeFuture.all(consumer1Promise.future(), consumer2Promise.future()).onComplete(ctx.asyncAssertSuccess(v -> {
+              Future.all(consumer1Promise.future(), consumer2Promise.future()).onComplete(ctx.asyncAssertSuccess(v -> {
                 int count = 0;
                 for (MockSpan span : tracer.finishedSpans()) {
                   String operationName = span.operationName();
