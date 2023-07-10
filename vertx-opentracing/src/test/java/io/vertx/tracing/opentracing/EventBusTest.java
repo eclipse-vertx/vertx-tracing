@@ -189,17 +189,20 @@ public class EventBusTest {
       vertx.deployVerticle(new ReplyVerticle(fail)).onComplete(ctx.asyncAssertSuccess(d2 -> {
         client.request(HttpMethod.GET, "/").onComplete(ctx.asyncAssertSuccess(req -> {
           req.send().onComplete(ctx.asyncAssertSuccess(resp -> {
-            ctx.assertEquals(200, resp.statusCode());
-            int count = 0;
-            for (MockSpan span : tracer.finishedSpans()) {
-              String operationName = span.operationName();
-              if (!operationName.equals("GET")) {
-                count++;
-                ctx.assertEquals("send", operationName);
-                ctx.assertEquals(ADDRESS, span.tags().get("message_bus.destination"));
+            vertx.executeBlocking(future -> {
+              ctx.assertEquals(200, resp.statusCode());
+              int count = 0;
+              for (MockSpan span : tracer.finishedSpans()) {
+                String operationName = span.operationName();
+                if (!operationName.equals("GET")) {
+                  count++;
+                  ctx.assertEquals("send", operationName);
+                  ctx.assertEquals(ADDRESS, span.tags().get("message_bus.destination"));
+                }
               }
-            }
-            ctx.assertEquals(expected, count);
+              ctx.assertEquals(expected, count);
+              future.complete();
+            });
           }));
         }));
       }));
