@@ -253,7 +253,7 @@ public class OpenTelemetryIntegrationTest {
     URL url = new URL("http://localhost:8080");
 
     // We need to run this inside a vertx context in order to don't make the current span thingy to fail
-    vertx.executeBlocking(p -> {
+    vertx.executeBlocking(() -> {
       Span span = otelTesting.getOpenTelemetry().getTracer("io.vertx").spanBuilder("/")
         .setSpanKind(SpanKind.CLIENT)
         .setAttribute("component", "vertx")
@@ -272,8 +272,8 @@ public class OpenTelemetryIntegrationTest {
         e.printStackTrace();
       } finally {
         span.end();
-        p.complete();
       }
+      return null;
     })
       .toCompletionStage()
       .toCompletableFuture()
