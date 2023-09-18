@@ -20,11 +20,6 @@ public class ZipkinTracingOptionsConverter {
    static void fromJson(Iterable<java.util.Map.Entry<String, Object>> json, ZipkinTracingOptions obj) {
     for (java.util.Map.Entry<String, Object> member : json) {
       switch (member.getKey()) {
-        case "senderOptions":
-          if (member.getValue() instanceof JsonObject) {
-            obj.setSenderOptions(new io.vertx.tracing.zipkin.HttpSenderOptions((io.vertx.core.json.JsonObject)member.getValue()));
-          }
-          break;
         case "serviceName":
           if (member.getValue() instanceof String) {
             obj.setServiceName((String)member.getValue());
@@ -33,6 +28,11 @@ public class ZipkinTracingOptionsConverter {
         case "supportsJoin":
           if (member.getValue() instanceof Boolean) {
             obj.setSupportsJoin((Boolean)member.getValue());
+          }
+          break;
+        case "senderOptions":
+          if (member.getValue() instanceof JsonObject) {
+            obj.setSenderOptions(new io.vertx.tracing.zipkin.HttpSenderOptions((io.vertx.core.json.JsonObject)member.getValue()));
           }
           break;
       }
@@ -44,12 +44,12 @@ public class ZipkinTracingOptionsConverter {
   }
 
    static void toJson(ZipkinTracingOptions obj, java.util.Map<String, Object> json) {
-    if (obj.getSenderOptions() != null) {
-      json.put("senderOptions", obj.getSenderOptions().toJson());
-    }
     if (obj.getServiceName() != null) {
       json.put("serviceName", obj.getServiceName());
     }
     json.put("supportsJoin", obj.isSupportsJoin());
+    if (obj.getSenderOptions() != null) {
+      json.put("senderOptions", obj.getSenderOptions().toJson());
+    }
   }
 }

@@ -39,7 +39,6 @@ public class HttpSenderOptions extends HttpClientOptions {
 
   private void init() {
     senderEndpoint = DEFAULT_SENDER_ENDPOINT;
-    setMaxPoolSize(1);
     setTryUseCompression(true);
   }
 
@@ -221,18 +220,8 @@ public class HttpSenderOptions extends HttpClientOptions {
   }
 
   @Override
-  public HttpSenderOptions setMaxPoolSize(int maxPoolSize) {
-    return (HttpSenderOptions)super.setMaxPoolSize(maxPoolSize);
-  }
-
-  @Override
   public HttpSenderOptions setHttp2MultiplexingLimit(int limit) {
     return (HttpSenderOptions)super.setHttp2MultiplexingLimit(limit);
-  }
-
-  @Override
-  public HttpSenderOptions setHttp2MaxPoolSize(int max) {
-    return (HttpSenderOptions)super.setHttp2MaxPoolSize(max);
   }
 
   @Override
@@ -276,21 +265,6 @@ public class HttpSenderOptions extends HttpClientOptions {
   }
 
   @Override
-  public HttpSenderOptions setSendUnmaskedFrames(boolean sendUnmaskedFrames) {
-    return (HttpSenderOptions)super.setSendUnmaskedFrames(sendUnmaskedFrames);
-  }
-
-  @Override
-  public HttpSenderOptions setMaxWebSocketFrameSize(int maxWebsocketFrameSize) {
-    return (HttpSenderOptions)super.setMaxWebSocketFrameSize(maxWebsocketFrameSize);
-  }
-
-  @Override
-  public HttpSenderOptions setMaxWebSocketMessageSize(int maxWebsocketMessageSize) {
-    return (HttpSenderOptions)super.setMaxWebSocketMessageSize(maxWebsocketMessageSize);
-  }
-
-  @Override
   public HttpSenderOptions setDefaultHost(String defaultHost) {
     return (HttpSenderOptions)super.setDefaultHost(defaultHost);
   }
@@ -318,11 +292,6 @@ public class HttpSenderOptions extends HttpClientOptions {
   @Override
   public HttpSenderOptions setMaxHeaderSize(int maxHeaderSize) {
     return (HttpSenderOptions)super.setMaxHeaderSize(maxHeaderSize);
-  }
-
-  @Override
-  public HttpSenderOptions setMaxWaitQueueSize(int maxWaitQueueSize) {
-    return (HttpSenderOptions)super.setMaxWaitQueueSize(maxWaitQueueSize);
   }
 
   @Override
@@ -391,37 +360,7 @@ public class HttpSenderOptions extends HttpClientOptions {
   }
 
   @Override
-  public HttpSenderOptions setTryUsePerFrameWebSocketCompression(boolean offer) {
-    return (HttpSenderOptions)super.setTryUsePerFrameWebSocketCompression(offer);
-  }
-
-  @Override
-  public HttpSenderOptions setTryUsePerMessageWebSocketCompression(boolean offer) {
-    return (HttpSenderOptions)super.setTryUsePerMessageWebSocketCompression(offer);
-  }
-
-  @Override
-  public HttpSenderOptions setWebSocketCompressionLevel(int compressionLevel) {
-    return (HttpSenderOptions)super.setWebSocketCompressionLevel(compressionLevel);
-  }
-
-  @Override
-  public HttpSenderOptions setWebSocketCompressionAllowClientNoContext(boolean offer) {
-    return (HttpSenderOptions)super.setWebSocketCompressionAllowClientNoContext(offer);
-  }
-
-  @Override
-  public HttpSenderOptions setWebSocketCompressionRequestServerNoContext(boolean offer) {
-    return (HttpSenderOptions)super.setWebSocketCompressionRequestServerNoContext(offer);
-  }
-
-  @Override
   public HttpSenderOptions setDecoderInitialBufferSize(int decoderInitialBufferSize) {
     return (HttpSenderOptions)super.setDecoderInitialBufferSize(decoderInitialBufferSize);
-  }
-
-  @Override
-  public HttpSenderOptions setPoolCleanerPeriod(int poolCleanerPeriod) {
-    return (HttpSenderOptions)super.setPoolCleanerPeriod(poolCleanerPeriod);
   }
 }
