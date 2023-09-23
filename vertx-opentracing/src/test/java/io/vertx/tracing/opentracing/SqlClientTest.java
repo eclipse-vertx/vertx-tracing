@@ -21,12 +21,9 @@ import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.pgclient.PgBuilder;
 import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.pgclient.PgPool;
-import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.Tuple;
+import io.vertx.sqlclient.*;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -45,7 +42,7 @@ public class SqlClientTest {
   private static PgConnectOptions connectOptions;
   private Vertx vertx;
   private MockTracer tracer;
-  private PgPool pool;
+  private Pool pool;
 
   @BeforeClass
   public static void startDB() {
@@ -72,7 +69,7 @@ public class SqlClientTest {
   public void before() {
     tracer = new MockTracer();
     vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new OpenTracingOptions(tracer)));
-    pool = PgPool.pool(vertx, connectOptions, new PoolOptions());
+    pool = PgBuilder.pool().connectingTo(connectOptions).using(vertx).build();
   }
 
   @After

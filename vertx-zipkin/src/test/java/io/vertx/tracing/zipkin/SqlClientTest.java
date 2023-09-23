@@ -16,12 +16,9 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.pgclient.PgBuilder;
 import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.pgclient.PgPool;
-import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.Tuple;
+import io.vertx.sqlclient.*;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -41,7 +38,7 @@ public class SqlClientTest extends ZipkinBaseTest {
 
   private static PostgreSQLContainer<?> server;
   private static PgConnectOptions connectOptions;
-  private PgPool pool;
+  private Pool pool;
 
   @BeforeClass
   public static void startDB() throws Exception {
@@ -68,7 +65,7 @@ public class SqlClientTest extends ZipkinBaseTest {
   @Before
   public void before() {
     super.before();
-    pool = PgPool.pool(vertx, connectOptions, new PoolOptions());
+    pool = PgBuilder.pool().connectingTo(connectOptions).using(vertx).build();
   }
 
   @Test
