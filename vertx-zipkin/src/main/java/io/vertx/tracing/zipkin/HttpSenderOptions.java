@@ -40,7 +40,7 @@ public class HttpSenderOptions extends HttpClientOptions {
   private void init() {
     senderEndpoint = DEFAULT_SENDER_ENDPOINT;
     setMaxPoolSize(1);
-    setTryUseCompression(true);
+    setDecompressionSupported(true);
   }
 
   public HttpSenderOptions(HttpSenderOptions other) {
@@ -271,8 +271,14 @@ public class HttpSenderOptions extends HttpClientOptions {
   }
 
   @Override
+  @Deprecated
   public HttpSenderOptions setTryUseCompression(boolean tryUseCompression) {
     return (HttpSenderOptions)super.setTryUseCompression(tryUseCompression);
+  }
+
+  @Override
+  public HttpSenderOptions setDecompressionSupported(boolean decompressionSupported) {
+    return (HttpSenderOptions) super.setDecompressionSupported(decompressionSupported);
   }
 
   @Override
