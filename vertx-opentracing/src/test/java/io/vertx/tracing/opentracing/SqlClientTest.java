@@ -23,7 +23,10 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.pgclient.PgBuilder;
 import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.sqlclient.*;
+import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.Tuple;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -136,6 +139,7 @@ public class SqlClientTest {
     assertEquals("sql", querySpan.tags().get("db.type"));
     assertEquals("postgres", querySpan.tags().get("db.user"));
     assertEquals("postgres", querySpan.tags().get("db.instance"));
+    assertEquals("postgresql", querySpan.tags().get("db.system"));
     assertEquals(querySpan.parentId(), requestSpan.context().spanId());
     assertEquals(querySpan.context().traceId(), requestSpan.context().traceId());
   }
