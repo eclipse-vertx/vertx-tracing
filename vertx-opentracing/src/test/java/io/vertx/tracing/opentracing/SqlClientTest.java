@@ -139,6 +139,7 @@ public class SqlClientTest {
     assertEquals("sql", querySpan.tags().get("db.type"));
     assertEquals("postgres", querySpan.tags().get("db.user"));
     assertEquals("postgres", querySpan.tags().get("db.instance"));
+    assertEquals("postgresql", querySpan.tags().get("db.system"));
     assertEquals(querySpan.parentId(), requestSpan.context().spanId());
     assertEquals(querySpan.context().traceId(), requestSpan.context().traceId());
   }
