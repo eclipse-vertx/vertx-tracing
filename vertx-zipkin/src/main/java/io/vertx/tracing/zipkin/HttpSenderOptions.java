@@ -260,8 +260,8 @@ public class HttpSenderOptions extends HttpClientOptions {
   }
 
   @Override
-  public HttpClientOptions setDecompressionSupported(boolean decompressionSupported) {
-    return super.setDecompressionSupported(decompressionSupported);
+  public HttpSenderOptions setDecompressionSupported(boolean decompressionSupported) {
+    return (HttpSenderOptions) super.setDecompressionSupported(decompressionSupported);
   }
 
   @Override
