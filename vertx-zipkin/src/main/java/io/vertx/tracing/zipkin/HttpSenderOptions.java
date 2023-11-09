@@ -39,7 +39,7 @@ public class HttpSenderOptions extends HttpClientOptions {
 
   private void init() {
     senderEndpoint = DEFAULT_SENDER_ENDPOINT;
-    setTryUseCompression(true);
+    setDecompressionSupported(true);
   }
 
   public HttpSenderOptions(HttpSenderOptions other) {
@@ -260,8 +260,8 @@ public class HttpSenderOptions extends HttpClientOptions {
   }
 
   @Override
-  public HttpSenderOptions setTryUseCompression(boolean tryUseCompression) {
-    return (HttpSenderOptions)super.setTryUseCompression(tryUseCompression);
+  public HttpClientOptions setDecompressionSupported(boolean decompressionSupported) {
+    return super.setDecompressionSupported(decompressionSupported);
   }
 
   @Override
