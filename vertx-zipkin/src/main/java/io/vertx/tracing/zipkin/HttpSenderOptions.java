@@ -280,11 +280,6 @@ public class HttpSenderOptions extends HttpClientOptions {
   }
 
   @Override
-  public HttpSenderOptions setOpenSslEngineOptions(OpenSSLEngineOptions sslEngineOptions) {
-    return (HttpSenderOptions)super.setOpenSslEngineOptions(sslEngineOptions);
-  }
-
-  @Override
   public HttpSenderOptions setAlpnVersions(List<HttpVersion> alpnVersions) {
     return (HttpSenderOptions)super.setAlpnVersions(alpnVersions);
   }
