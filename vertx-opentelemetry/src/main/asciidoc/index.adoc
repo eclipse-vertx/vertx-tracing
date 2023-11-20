@@ -67,3 +67,12 @@ The default sending policy is `PROPAGATE`, you can configure the policy with {@l
 ----
 {@link examples.OpenTelemetryExamples#ex6}
 ----
+
+== Vert.x tracing and auto-configuration
+
+When OpeneTelemetry is using https://opentelemetry.io/docs/instrumentation/java/manual/#automatic-configuration[auto configuration], it is possible
+that the {@link io.vertx.tracing.opentelemetry.VertxContextStorageProvider} is picked up by the ``SPI`` as the default ``ContextStorageProvider``.
+This can result in ``NullPointerException``s when it is called outside of the Vert.x context by another part of your application.
+
+To prevent this behavior specify ``-Dio.opentelemetry.context.contextStorageProvider=default`` as a system property. 
+
