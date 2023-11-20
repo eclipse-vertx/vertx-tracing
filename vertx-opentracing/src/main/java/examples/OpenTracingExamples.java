@@ -12,6 +12,7 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.docgen.Source;
 import io.vertx.tracing.opentracing.OpenTracingOptions;
+import io.vertx.tracing.opentracing.OpenTracingTracer;
 import io.vertx.tracing.opentracing.OpenTracingUtil;
 
 @Source
@@ -26,11 +27,10 @@ public class OpenTracingExamples {
   }
 
   public void ex2(Tracer tracer) {
-    Vertx vertx = Vertx.vertx(new VertxOptions()
-      .setTracingOptions(
-        new OpenTracingOptions(tracer)
-      )
-    );
+    Vertx vertx = Vertx
+      .builder()
+      .withTracer(o -> new OpenTracingTracer(false, tracer))
+      .build();
   }
 
   public void ex3(Vertx vertx) {

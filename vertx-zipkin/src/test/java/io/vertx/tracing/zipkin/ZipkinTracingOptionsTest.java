@@ -40,19 +40,4 @@ public class ZipkinTracingOptionsTest {
     VertxSender sender = tracer.sender();
     assertEquals(senderOptions.toJson(), sender.options().toJson());
   }
-
-  @Test
-  public void testDefaultFactory() {
-    TracingOptions options = new ZipkinTracingOptions();
-    assertNotNull(options.getFactory());
-    assertEquals(ZipkinTracerFactory.INSTANCE, options.getFactory());
-  }
-
-  @Test
-  public void testFactory() {
-    TracingOptions options = new ZipkinTracingOptions().setFactory(VertxTracerFactory.NOOP);
-    assertNotNull(options.getFactory());
-    assertNotEquals(ZipkinTracerFactory.INSTANCE, options.getFactory());
-    assertEquals(VertxTracerFactory.NOOP, options.getFactory());
-  }
 }

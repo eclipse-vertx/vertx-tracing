@@ -21,6 +21,7 @@ import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.tracing.TracingOptions;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -47,7 +48,7 @@ public class OpenTracingTest {
   @Before
   public void before() {
     tracer = new MockTracer();
-    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new OpenTracingOptions(tracer)));
+    vertx = Vertx.builder().withTracer(new OpenTracingTracerFactory(tracer)).build();
   }
 
   @After

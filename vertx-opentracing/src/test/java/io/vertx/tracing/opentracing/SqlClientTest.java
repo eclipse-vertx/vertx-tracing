@@ -71,7 +71,7 @@ public class SqlClientTest {
   @Before
   public void before() {
     tracer = new MockTracer();
-    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new OpenTracingOptions(tracer)));
+    vertx = Vertx.builder().withTracer(new OpenTracingTracerFactory(tracer)).build();
     pool = PgBuilder.pool().connectingTo(connectOptions).using(vertx).build();
   }
 

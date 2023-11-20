@@ -56,7 +56,7 @@ public class VertxSender extends Sender {
   public VertxSender(HttpSenderOptions options) {
     this.options = new HttpSenderOptions(options);
     this.endpoint = options.getSenderEndpoint();
-    this.vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new TracingOptions().setFactory(VertxTracerFactory.NOOP)));
+    this.vertx = Vertx.builder().withTracer(VertxTracerFactory.NOOP).build();
     this.client = vertx.createHttpClient(options);
   }
 

@@ -38,7 +38,7 @@ public class EventBusTest {
   @Before
   public void before() {
     tracer = new MockTracer();
-    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new OpenTracingOptions(tracer)));
+    vertx = Vertx.builder().withTracer(new OpenTracingTracerFactory(tracer)).build();
     client = vertx.createHttpClient(new HttpClientOptions().setDefaultPort(8080));
   }
 

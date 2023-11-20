@@ -10,7 +10,6 @@
  */
 package io.vertx.tracing.opentracing;
 
-import io.opentracing.Tracer;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.tracing.TracingOptions;
@@ -18,42 +17,19 @@ import io.vertx.core.tracing.TracingOptions;
 @DataObject
 public class OpenTracingOptions extends TracingOptions {
 
-  private Tracer tracer;
-
   public OpenTracingOptions() {
-    this.setFactory(OpenTracingTracerFactory.INSTANCE);
-  }
-
-  public OpenTracingOptions(Tracer tracer) {
-    this.tracer = tracer;
-    this.setFactory(OpenTracingTracerFactory.INSTANCE);
   }
 
   public OpenTracingOptions(OpenTracingOptions other) {
-    tracer = other.tracer;
-    this.setFactory(OpenTracingTracerFactory.INSTANCE);
+    super(other);
   }
 
   public OpenTracingOptions(JsonObject json) {
     super(json);
-    this.setFactory(OpenTracingTracerFactory.INSTANCE);
   }
 
   @Override
   public OpenTracingOptions copy() {
     return new OpenTracingOptions(this);
-  }
-
-  // Visible for testing
-  Tracer getTracer() {
-    return tracer;
-  }
-
-  io.vertx.core.spi.tracing.VertxTracer<?, ?> buildTracer() {
-    if (tracer != null) {
-      return new OpenTracingTracer(false, tracer);
-    } else {
-      return new OpenTracingTracer(true, OpenTracingTracer.createDefaultTracer());
-    }
   }
 }

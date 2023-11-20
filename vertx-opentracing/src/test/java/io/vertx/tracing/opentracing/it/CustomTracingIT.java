@@ -18,6 +18,7 @@ import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.tracing.opentracing.OpenTracingOptions;
+import io.vertx.tracing.opentracing.OpenTracingTracerFactory;
 import io.vertx.tracing.opentracing.OpenTracingUtil;
 import io.vertx.tracing.opentracing.it.jaegercontainer.JaegerContainerAllIn;
 import org.junit.jupiter.api.AfterAll;
@@ -58,10 +59,7 @@ public class CustomTracingIT {
       JAEGER_ALL_IN_ONE.start();
       tracer = JAEGER_ALL_IN_ONE.createTracer(JAEGER_SERVICE_NAME);
       deployCheck.flag();
-      tracedVertx = Vertx.vertx(
-        new VertxOptions().setTracingOptions(
-          new OpenTracingOptions(tracer))
-      );
+      tracedVertx = Vertx.builder().withTracer(new OpenTracingTracerFactory(tracer)).build();
       HttpClient client = tracedVertx.createHttpClient();
       tracedVertx.deployVerticle(ServerVerticle.class.getName()).onComplete(context.succeeding(id -> {
         client.request(HttpMethod.GET, 8080,"localhost","/health")

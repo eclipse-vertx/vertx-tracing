@@ -13,7 +13,6 @@ package io.vertx.tracing.opentelemetry;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.context.Scope;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.tracing.VertxTracer;
@@ -26,16 +25,13 @@ public class OpenTelemetryOptions extends TracingOptions {
 
   public OpenTelemetryOptions(OpenTelemetry openTelemetry) {
     this.openTelemetry = openTelemetry;
-    this.setFactory(OpenTelemetryTracingFactory.INSTANCE);
   }
 
   public OpenTelemetryOptions() {
-    this.setFactory(OpenTelemetryTracingFactory.INSTANCE);
   }
 
   public OpenTelemetryOptions(JsonObject json) {
     super(json);
-    this.setFactory(OpenTelemetryTracingFactory.INSTANCE);
   }
 
   VertxTracer<Span, Span> buildTracer() {
