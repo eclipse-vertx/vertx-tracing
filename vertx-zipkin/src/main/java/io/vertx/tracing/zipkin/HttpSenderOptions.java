@@ -11,6 +11,7 @@
 package io.vertx.tracing.zipkin;
 
 import io.vertx.codegen.annotations.DataObject;
+import io.vertx.codegen.json.annotations.JsonGen;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.Http2Settings;
 import io.vertx.core.http.HttpClientOptions;
@@ -25,7 +26,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Options for reporting to a Zipkin server configured by default to {@code http://localhost:9411/api/v2/spans}.
  */
-@DataObject(generateConverter = true, publicConverter = false)
+@DataObject
+@JsonGen(publicConverter = false)
 public class HttpSenderOptions extends HttpClientOptions {
 
   public static final String DEFAULT_SENDER_ENDPOINT = "http://localhost:9411/api/v2/spans";
