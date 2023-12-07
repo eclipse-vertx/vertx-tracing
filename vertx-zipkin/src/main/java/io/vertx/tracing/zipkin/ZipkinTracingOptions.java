@@ -14,7 +14,7 @@ import brave.Tracing;
 import brave.http.HttpTracing;
 import brave.sampler.Sampler;
 import io.vertx.codegen.annotations.DataObject;
-import io.vertx.codegen.annotations.JsonGen;
+import io.vertx.codegen.json.annotations.JsonGen;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.tracing.TracingOptions;
 import zipkin2.reporter.AsyncReporter;

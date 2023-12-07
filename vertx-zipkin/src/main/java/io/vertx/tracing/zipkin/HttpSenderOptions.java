@@ -11,7 +11,7 @@
 package io.vertx.tracing.zipkin;
 
 import io.vertx.codegen.annotations.DataObject;
-import io.vertx.codegen.annotations.JsonGen;
+import io.vertx.codegen.json.annotations.JsonGen;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.Http2Settings;
 import io.vertx.core.http.HttpClientOptions;
