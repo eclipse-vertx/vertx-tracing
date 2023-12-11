@@ -92,6 +92,8 @@ public class EventBusTest {
             .isEqualTo("send");
           assertThat(data.getAttributes().get(AttributeKey.stringKey("message_bus.destination")))
             .isEqualTo(ADDRESS);
+          assertThat(data.getAttributes().get(AttributeKey.stringKey("messaging.destination.name")))
+            .isEqualTo(ADDRESS);
         }
       }
       if (count == expected) {
@@ -154,6 +156,8 @@ public class EventBusTest {
                       assertThat(operationName)
                         .isEqualTo("publish");
                       assertThat(data.getAttributes().get(AttributeKey.stringKey("message_bus.destination")))
+                        .isEqualTo(ADDRESS);
+                      assertThat(data.getAttributes().get(AttributeKey.stringKey("messaging.destination.name")))
                         .isEqualTo(ADDRESS);
                     }
                   }
