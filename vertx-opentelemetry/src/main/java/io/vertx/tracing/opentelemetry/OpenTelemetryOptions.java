@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2023 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -12,7 +12,6 @@ package io.vertx.tracing.opentelemetry;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.Span;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.tracing.VertxTracer;
@@ -34,7 +33,7 @@ public class OpenTelemetryOptions extends TracingOptions {
     super(json);
   }
 
-  VertxTracer<Span, Span> buildTracer() {
+  VertxTracer<Operation, Operation> buildTracer() {
     if (openTelemetry != null) {
       return new OpenTelemetryTracer(openTelemetry);
     } else {
