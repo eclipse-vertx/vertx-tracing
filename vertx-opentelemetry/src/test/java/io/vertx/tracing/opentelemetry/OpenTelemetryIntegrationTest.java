@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2023 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -22,13 +22,7 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.http.HttpClientRequest;
-import io.vertx.core.http.HttpClientResponse;
-import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.http.RequestOptions;
+import io.vertx.core.http.*;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxExtension;
@@ -49,21 +43,20 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertEquals;
 
 
 @ExtendWith(VertxExtension.class)
 public class OpenTelemetryIntegrationTest {
 
   @RegisterExtension
-  final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
+  OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
+
   private Vertx vertx;
   private TextMapPropagator textMapPropagator;
 
@@ -249,35 +242,27 @@ public class OpenTelemetryIntegrationTest {
 
   }
 
-  private void sendRequestWithTrace() throws IOException, ExecutionException, InterruptedException {
+  private void sendRequestWithTrace() throws Exception {
     URL url = new URL("http://localhost:8080");
 
-    // We need to run this inside a vertx context in order to don't make the current span thingy to fail
-    vertx.executeBlocking(p -> {
-      Span span = otelTesting.getOpenTelemetry().getTracer("io.vertx").spanBuilder("/")
-        .setSpanKind(SpanKind.CLIENT)
-        .setAttribute("component", "vertx")
-        .startSpan();
-      try {
-        span
-          .setAttribute(SemanticAttributes.HTTP_METHOD, "GET")
-          .setAttribute(SemanticAttributes.HTTP_URL, url.toString());
+    Span span = otelTesting.getOpenTelemetry().getTracer("io.vertx").spanBuilder("/")
+      .setSpanKind(SpanKind.CLIENT)
+      .setAttribute("component", "vertx")
+      .startSpan();
 
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        textMapPropagator.inject(io.opentelemetry.context.Context.root().with(span), con, setter);
-        con.setRequestMethod("GET");
+    try {
+      span
+        .setAttribute(SemanticAttributes.HTTP_METHOD, "GET")
+        .setAttribute(SemanticAttributes.HTTP_URL, url.toString());
 
-        assertThat(con.getResponseCode()).isEqualTo(200);
-      } catch (IOException e) {
-        e.printStackTrace();
-      } finally {
-        span.end();
-        p.complete();
-      }
-    })
-      .toCompletionStage()
-      .toCompletableFuture()
-      .get();
+      HttpURLConnection con = (HttpURLConnection) url.openConnection();
+      textMapPropagator.inject(io.opentelemetry.context.Context.root().with(span), con, setter);
+      con.setRequestMethod("GET");
+
+      assertThat(con.getResponseCode()).isEqualTo(200);
+    } finally {
+      span.end();
+    }
   }
 
   @Test

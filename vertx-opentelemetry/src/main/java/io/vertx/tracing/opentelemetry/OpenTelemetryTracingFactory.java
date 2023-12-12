@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2023 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -10,8 +10,6 @@
  */
 package io.vertx.tracing.opentelemetry;
 
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.context.Scope;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.VertxTracerFactory;
 import io.vertx.core.spi.tracing.VertxTracer;
@@ -22,7 +20,7 @@ public class OpenTelemetryTracingFactory implements VertxTracerFactory {
   static final OpenTelemetryTracingFactory INSTANCE = new OpenTelemetryTracingFactory();
 
   @Override
-  public VertxTracer<Span, Span> tracer(final TracingOptions options) {
+  public VertxTracer<?, ?> tracer(final TracingOptions options) {
     OpenTelemetryOptions openTelemetryOptions;
     if (options instanceof OpenTelemetryOptions) {
       openTelemetryOptions = (OpenTelemetryOptions) options;
