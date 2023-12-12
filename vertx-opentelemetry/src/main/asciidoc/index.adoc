@@ -23,6 +23,19 @@ which gives dummy values (all zeroes) for trace and span ids. The OpenTelemetry 
 {@link examples.OpenTelemetryExamples#ex7}
 ----
 
+[NOTE]
+====
+This project provides an OpenTelemetry `ContextStorageProvider` that uses the Vert.x {@link io.vertx.core.Context} when invoked on a Vert.x thread.
+Otherwise, it fallbacks to the default storage.
+
+If several `ContextStorageProvider` implementations are present on the classpath, you can force OpenTelemetry to select the Vert.x one:
+
+[source]
+----
+-Dio.opentelemetry.context.contextStorageProvider=io.vertx.tracing.opentelemetry.VertxContextStorageProvider
+----
+====
+
 == Tracing policy
 
 The tracing policy defines the behavior of a component when tracing is enabled:

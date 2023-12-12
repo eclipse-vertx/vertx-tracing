@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2023 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -14,6 +14,7 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
@@ -22,6 +23,7 @@ import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.spi.tracing.VertxTracer;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.junit5.VertxExtension;
+import io.vertx.tracing.opentelemetry.VertxContextStorageProvider.VertxContextStorage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -32,7 +34,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static io.vertx.tracing.opentelemetry.VertxContextStorageProvider.ACTIVE_CONTEXT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.Mockito.*;
@@ -42,9 +43,9 @@ public class OpenTelemetryTracingFactoryTest {
 
   @Test
   public void receiveRequestShouldNotReturnSpanIfPolicyIsIgnore(final Vertx vertx) {
-    final VertxTracer<Span, Span> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
+    VertxTracer<Operation, Operation> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
 
-    final Span span = tracer.receiveRequest(
+    final Operation operation = tracer.receiveRequest(
       vertx.getOrCreateContext(),
       SpanKind.MESSAGING,
       TracingPolicy.IGNORE,
@@ -54,14 +55,14 @@ public class OpenTelemetryTracingFactoryTest {
       TagExtractor.empty()
     );
 
-    assertThat(span).isNull();
+    assertThat(operation).isNull();
   }
 
   @Test
   public void receiveRequestShouldNotReturnSpanIfPolicyIsPropagateAndPreviousContextIsNotPresent(final Vertx vertx) {
-    final VertxTracer<Span, Span> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
+    VertxTracer<Operation, Operation> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
 
-    final Span span = tracer.receiveRequest(
+    final Operation operation = tracer.receiveRequest(
       vertx.getOrCreateContext(),
       SpanKind.MESSAGING,
       TracingPolicy.PROPAGATE,
@@ -71,12 +72,12 @@ public class OpenTelemetryTracingFactoryTest {
       TagExtractor.empty()
     );
 
-    assertThat(span).isNull();
+    assertThat(operation).isNull();
   }
 
   @Test
   public void receiveRequestShouldReturnSpanIfPolicyIsPropagateAndPreviousContextIsPresent(final Vertx vertx) {
-    final VertxTracer<Span, Span> tracer = new OpenTelemetryOptions(
+    VertxTracer<Operation, Operation> tracer = new OpenTelemetryOptions(
       OpenTelemetry.propagating(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
     ).buildTracer();
 
@@ -85,7 +86,7 @@ public class OpenTelemetryTracingFactoryTest {
     );
 
     final io.vertx.core.Context ctx = vertx.getOrCreateContext();
-    final Span span = tracer.receiveRequest(
+    final Operation operation = tracer.receiveRequest(
       ctx,
       SpanKind.MESSAGING,
       TracingPolicy.PROPAGATE,
@@ -95,10 +96,9 @@ public class OpenTelemetryTracingFactoryTest {
       TagExtractor.empty()
     );
 
-    assertThat(span)
-      .isNotNull();
+    assertThat(operation).isNotNull();
 
-    final io.opentelemetry.context.Context tracingContext = ctx.getLocal(ACTIVE_CONTEXT);
+    final io.opentelemetry.context.Context tracingContext = VertxContextStorage.INSTANCE.current();
     assertThat(tracingContext).isNotNull();
   }
 
@@ -113,14 +113,14 @@ public class OpenTelemetryTracingFactoryTest {
     final Span parentSpan = otelTracer.spanBuilder("example-span")
       .startSpan();
 
-    CompletableFuture<Span> futureSpan = new CompletableFuture<>();
+    CompletableFuture<Operation> futureOperation = new CompletableFuture<>();
 
     vertx.runOnContext(unused -> {
       parentSpan.makeCurrent();
 
-      final VertxTracer<Span, Span> tracer = new OpenTelemetryOptions(openTelemetry).buildTracer();
+      VertxTracer<Operation, Operation> tracer = new OpenTelemetryOptions(openTelemetry).buildTracer();
 
-      final Span span = tracer.receiveRequest(
+      final Operation operation = tracer.receiveRequest(
         vertx.getOrCreateContext(),
         SpanKind.MESSAGING,
         TracingPolicy.PROPAGATE,
@@ -132,27 +132,29 @@ public class OpenTelemetryTracingFactoryTest {
 
       parentSpan.end();
 
-      futureSpan.complete(span);
+      futureOperation.complete(operation);
     });
 
-    Span span = futureSpan.get();
+    Operation operation = futureOperation.get();
 
-    assertThat(span).isNotNull();
-    assertThat(span.getSpanContext().getTraceId())
+    assertThat(operation).isNotNull();
+    assertThat(operation.span().getSpanContext().getTraceId())
       .isEqualTo(parentSpan.getSpanContext().getTraceId());
   }
 
   @Test
   public void sendResponseEndsSpan(final Vertx vertx) {
-    final VertxTracer<Span, Span> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
+    VertxTracer<Operation, Operation> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
 
-    final Span span = mock(Span.class);
+    Span span = mock(Span.class);
     doNothing().when(span).end();
+    Scope scope = mock(Scope.class);
+    Operation operation = new Operation(span, scope);
 
     tracer.sendResponse(
       vertx.getOrCreateContext(),
       mock(Serializable.class),
-      span,
+      operation,
       mock(Exception.class),
       TagExtractor.empty()
     );
@@ -162,7 +164,7 @@ public class OpenTelemetryTracingFactoryTest {
 
   @Test
   public void sendResponseShouldNotThrowExceptionWhenSpanIsNull(final Vertx vertx) {
-    final VertxTracer<Span, Span> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
+    VertxTracer<Operation, Operation> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
 
     assertThatNoException().isThrownBy(() -> tracer.sendResponse(
       vertx.getOrCreateContext(),
@@ -175,12 +177,12 @@ public class OpenTelemetryTracingFactoryTest {
 
   @Test
   public void sendRequestShouldNotReturnSpanIfRequestIsNull(final Vertx vertx) {
-    final VertxTracer<Span, Span> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
+    VertxTracer<Operation, Operation> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
 
     final Context ctx = vertx.getOrCreateContext();
-    ctx.putLocal(ACTIVE_CONTEXT, io.opentelemetry.context.Context.current());
+    VertxContextStorage.INSTANCE.attach(io.opentelemetry.context.Context.current());
 
-    final Span span = tracer.sendRequest(
+    final Operation operation = tracer.sendRequest(
       ctx,
       SpanKind.MESSAGING,
       TracingPolicy.PROPAGATE,
@@ -191,17 +193,17 @@ public class OpenTelemetryTracingFactoryTest {
       TagExtractor.empty()
     );
 
-    assertThat(span).isNull();
+    assertThat(operation).isNull();
   }
 
   @Test
   public void sendRequestShouldNotReturnSpanIfPolicyIsIgnore(final Vertx vertx) {
-    final VertxTracer<Span, Span> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
+    VertxTracer<Operation, Operation> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
 
     final Context ctx = vertx.getOrCreateContext();
-    ctx.putLocal(ACTIVE_CONTEXT, io.opentelemetry.context.Context.current());
+    VertxContextStorage.INSTANCE.attach(io.opentelemetry.context.Context.current());
 
-    final Span span = tracer.sendRequest(
+    final Operation operation = tracer.sendRequest(
       ctx,
       SpanKind.MESSAGING,
       TracingPolicy.IGNORE,
@@ -212,15 +214,15 @@ public class OpenTelemetryTracingFactoryTest {
       TagExtractor.empty()
     );
 
-    assertThat(span).isNull();
+    assertThat(operation).isNull();
   }
 
 
   @Test
   public void sendRequestShouldNotReturnSpanIfPolicyIsPropagateAndPreviousContextIsNotPresent(final Vertx vertx) {
-    final VertxTracer<Span, Span> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
+    VertxTracer<Operation, Operation> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
 
-    final Span span = tracer.sendRequest(
+    final Operation operation = tracer.sendRequest(
       vertx.getOrCreateContext(),
       SpanKind.MESSAGING,
       TracingPolicy.PROPAGATE,
@@ -231,17 +233,17 @@ public class OpenTelemetryTracingFactoryTest {
       TagExtractor.empty()
     );
 
-    assertThat(span).isNull();
+    assertThat(operation).isNull();
   }
 
   @Test
   public void sendRequestShouldReturnSpanIfPolicyIsPropagateAndPreviousContextIsPresent(final Vertx vertx) {
-    final VertxTracer<Span, Span> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
+    VertxTracer<Operation, Operation> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
 
     final Context ctx = vertx.getOrCreateContext();
-    ctx.putLocal(ACTIVE_CONTEXT, io.opentelemetry.context.Context.current());
+    VertxContextStorage.INSTANCE.attach(io.opentelemetry.context.Context.current());
 
-    final Span span = tracer.sendRequest(
+    final Operation operation = tracer.sendRequest(
       ctx,
       SpanKind.MESSAGING,
       TracingPolicy.PROPAGATE,
@@ -252,16 +254,16 @@ public class OpenTelemetryTracingFactoryTest {
       TagExtractor.empty()
     );
 
-    assertThat(span).isNotNull();
+    assertThat(operation).isNotNull();
   }
 
   @Test
   public void sendRequestShouldReturnSpanIfPolicyIsAlwaysAndPreviousContextIsNotPresent(final Vertx vertx) {
-    final VertxTracer<Span, Span> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
+    VertxTracer<Operation, Operation> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
 
     final Context ctx = vertx.getOrCreateContext();
 
-    final Span span = tracer.sendRequest(
+    final Operation operation = tracer.sendRequest(
       ctx,
       SpanKind.MESSAGING,
       TracingPolicy.ALWAYS,
@@ -272,20 +274,22 @@ public class OpenTelemetryTracingFactoryTest {
       TagExtractor.empty()
     );
 
-    assertThat(span).isNotNull();
+    assertThat(operation).isNotNull();
   }
 
   @Test
   public void receiveResponseEndsSpan(final Vertx vertx) {
-    final VertxTracer<Span, Span> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
+    VertxTracer<Operation, Operation> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
 
-    final Span span = mock(Span.class);
+    Span span = mock(Span.class);
     doNothing().when(span).end();
+    Scope scope = mock(Scope.class);
+    Operation operation = new Operation(span, scope);
 
     tracer.receiveResponse(
       vertx.getOrCreateContext(),
       mock(Serializable.class),
-      span,
+      operation,
       mock(Exception.class),
       TagExtractor.empty()
     );
@@ -295,7 +299,7 @@ public class OpenTelemetryTracingFactoryTest {
 
   @Test
   public void receiveResponseShouldNotThrowExceptionWhenSpanIsNull(final Vertx vertx) {
-    final VertxTracer<Span, Span> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
+    VertxTracer<Operation, Operation> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
 
     assertThatNoException().isThrownBy(() -> tracer.receiveResponse(
       vertx.getOrCreateContext(),

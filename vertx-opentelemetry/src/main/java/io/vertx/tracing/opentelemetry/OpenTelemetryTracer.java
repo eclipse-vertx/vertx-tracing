@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2023 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -16,6 +16,7 @@ import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapSetter;
@@ -24,13 +25,12 @@ import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.spi.tracing.VertxTracer;
 import io.vertx.core.tracing.TracingPolicy;
+import io.vertx.tracing.opentelemetry.VertxContextStorageProvider.VertxContextStorage;
 
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 
-import static io.vertx.tracing.opentelemetry.VertxContextStorageProvider.ACTIVE_CONTEXT;
-
-class OpenTelemetryTracer implements VertxTracer<Span, Span> {
+class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
 
   private static final TextMapGetter<Iterable<Entry<String, String>>> getter = new HeadersPropagatorGetter();
   private static final TextMapSetter<BiConsumer<String, String>> setter = new HeadersPropagatorSetter();
@@ -44,7 +44,7 @@ class OpenTelemetryTracer implements VertxTracer<Span, Span> {
   }
 
   @Override
-  public <R> Span receiveRequest(
+  public <R> Operation receiveRequest(
     final Context context,
     final SpanKind kind,
     final TracingPolicy policy,
@@ -57,49 +57,61 @@ class OpenTelemetryTracer implements VertxTracer<Span, Span> {
       return null;
     }
 
-    io.opentelemetry.context.Context tracingContext = propagators.getTextMapPropagator().extract(io.opentelemetry.context.Context.current(), headers, getter);
+    io.opentelemetry.context.Context otelCtx;
+    if ((otelCtx = VertxContextStorage.INSTANCE.current()) == null) {
+      otelCtx = io.opentelemetry.context.Context.root();
+    }
+
+    otelCtx = propagators.getTextMapPropagator().extract(otelCtx, headers, getter);
 
     // If no span, and policy is PROPAGATE, then don't create the span
-    if (Span.fromContextOrNull(tracingContext) == null && TracingPolicy.PROPAGATE.equals(policy)) {
+    if (Span.fromContextOrNull(otelCtx) == null && TracingPolicy.PROPAGATE.equals(policy)) {
       return null;
     }
 
-    final Span span = reportTagsAndStart(tracer
+    io.opentelemetry.api.trace.SpanKind spanKind = SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.SERVER : io.opentelemetry.api.trace.SpanKind.CONSUMER;
+
+    SpanBuilder spanBuilder = tracer
       .spanBuilder(operation)
-      .setParent(tracingContext)
-      .setSpanKind(SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.SERVER : io.opentelemetry.api.trace.SpanKind.CONSUMER), request, tagExtractor, false);
+      .setParent(otelCtx)
+      .setSpanKind(spanKind);
 
-    VertxContextStorageProvider.VertxContextStorage.INSTANCE.attach(context, tracingContext.with(span));
+    Span span = reportTagsAndStart(spanBuilder, request, tagExtractor, false);
+    Scope scope = VertxContextStorage.INSTANCE.attach(context, span.storeInContext(otelCtx));
 
-    return span;
+    return new Operation(span, scope);
   }
 
   @Override
   public <R> void sendResponse(
     final Context context,
     final R response,
-    final Span span,
+    final Operation operation,
     final Throwable failure,
     final TagExtractor<R> tagExtractor) {
-    if (span != null) {
-      context.remove(ACTIVE_CONTEXT);
-      end(span, response, tagExtractor, failure, false);
+    if (operation != null) {
+      end(operation, response, tagExtractor, failure, false);
     }
   }
 
-  private static <R> void end(Span span, R response, TagExtractor<R> tagExtractor, Throwable failure, boolean client) {
-    if (failure != null) {
-      span.recordException(failure);
+  private static <R> void end(Operation operation, R response, TagExtractor<R> tagExtractor, Throwable failure, boolean client) {
+    Span span = operation.span();
+    try {
+      if (failure != null) {
+        span.recordException(failure);
+      }
+      if (response != null) {
+        Attributes attributes = processTags(response, tagExtractor, client);
+        span.setAllAttributes(attributes);
+      }
+      span.end();
+    } finally {
+      operation.scope().close();
     }
-    if (response != null) {
-      Attributes attributes = processTags(response, tagExtractor, client);
-      span.setAllAttributes(attributes);
-    }
-    span.end();
   }
 
   @Override
-  public <R> Span sendRequest(
+  public <R> Operation sendRequest(
     final Context context,
     final SpanKind kind,
     final TracingPolicy policy,
@@ -112,36 +124,38 @@ class OpenTelemetryTracer implements VertxTracer<Span, Span> {
       return null;
     }
 
-    io.opentelemetry.context.Context tracingContext = context.getLocal(ACTIVE_CONTEXT);
+    io.opentelemetry.context.Context otelCtx = VertxContextStorage.INSTANCE.current();
 
-    if (tracingContext == null && !TracingPolicy.ALWAYS.equals(policy)) {
-      return null;
+    if (otelCtx == null) {
+      if (!TracingPolicy.ALWAYS.equals(policy)) {
+        return null;
+      }
+      otelCtx = io.opentelemetry.context.Context.root();
     }
 
-    if (tracingContext == null) {
-      tracingContext = io.opentelemetry.context.Context.root();
-    }
+    io.opentelemetry.api.trace.SpanKind spanKind = SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.CLIENT : io.opentelemetry.api.trace.SpanKind.PRODUCER;
 
-    final Span span = reportTagsAndStart(tracer.spanBuilder(operation)
-        .setParent(tracingContext)
-        .setSpanKind(SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.CLIENT : io.opentelemetry.api.trace.SpanKind.PRODUCER)
-      , request, tagExtractor, true);
+    SpanBuilder spanBuilder = tracer.spanBuilder(operation)
+      .setParent(otelCtx)
+      .setSpanKind(spanKind);
 
-    tracingContext = tracingContext.with(span);
-    propagators.getTextMapPropagator().inject(tracingContext, headers, setter);
+    Span span = reportTagsAndStart(spanBuilder, request, tagExtractor, true);
 
-    return span;
+    otelCtx = otelCtx.with(span);
+    propagators.getTextMapPropagator().inject(otelCtx, headers, setter);
+
+    return new Operation(span, Scope.noop());
   }
 
   @Override
   public <R> void receiveResponse(
     final Context context,
     final R response,
-    final Span span,
+    final Operation operation,
     final Throwable failure,
     final TagExtractor<R> tagExtractor) {
-    if (span != null) {
-      end(span, response, tagExtractor, failure, true);
+    if (operation != null) {
+      end(operation, response, tagExtractor, failure, true);
     }
   }
 
