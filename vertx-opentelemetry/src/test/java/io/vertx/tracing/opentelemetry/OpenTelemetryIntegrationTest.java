@@ -55,7 +55,7 @@ import static org.awaitility.Awaitility.await;
 public class OpenTelemetryIntegrationTest {
 
   @RegisterExtension
-  OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
+  static final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
 
   private Vertx vertx;
   private TextMapPropagator textMapPropagator;

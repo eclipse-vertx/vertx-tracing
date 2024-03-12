@@ -42,11 +42,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(VertxExtension.class)
 public class SqlClientTest {
 
+  @RegisterExtension
+  static final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
+
   private static PostgreSQLContainer<?> server;
   private static PgConnectOptions connectOptions;
 
-  @RegisterExtension
-  final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
   private Vertx vertx;
   private Pool pool;
 
