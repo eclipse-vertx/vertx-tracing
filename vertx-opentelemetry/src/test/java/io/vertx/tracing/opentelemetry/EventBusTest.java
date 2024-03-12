@@ -33,10 +33,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ExtendWith(VertxExtension.class)
 public class EventBusTest {
 
+  @RegisterExtension
+  static final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
+
   private static final String ADDRESS = "the-address";
 
-  @RegisterExtension
-  final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
   private Vertx vertx;
   private HttpClient client;
 
