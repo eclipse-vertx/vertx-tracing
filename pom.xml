@@ -24,13 +24,13 @@
   </parent>
 
   <artifactId>vertx-tracing-parent</artifactId>
-  <version>4.5.7-SNAPSHOT</version>
+  <version>4.5.7</version>
   <packaging>pom</packaging>
 
   <name>Vert.x Tracing Parent</name>
 
   <properties>
-    <stack.version>4.5.7-SNAPSHOT</stack.version>
+    <stack.version>4.5.7</stack.version>
     <doc.skip>true</doc.skip>
     <jar.manifest>${project.basedir}/src/main/resources/META-INF/MANIFEST.MF</jar.manifest>
     <testcontainers.version>1.15.2</testcontainers.version>
