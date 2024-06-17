@@ -29,7 +29,6 @@
 
   <properties>
     <zipkin.version>5.6.0</zipkin.version>
-    <doc.skip>false</doc.skip>
   </properties>
 
   <dependencies>
