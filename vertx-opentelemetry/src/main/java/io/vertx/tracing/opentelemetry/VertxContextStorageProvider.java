@@ -15,7 +15,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.context.ContextStorageProvider;
 import io.opentelemetry.context.Scope;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.internal.ContextInternal;
 
 public class VertxContextStorageProvider implements ContextStorageProvider {
 
