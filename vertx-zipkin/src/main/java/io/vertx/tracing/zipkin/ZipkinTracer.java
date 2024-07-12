@@ -28,6 +28,7 @@ import io.vertx.core.spi.observability.HttpResponse;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.tracing.TracingPolicy;
+import zipkin2.reporter.Sender;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -133,7 +134,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
     }
   };
 
-  public VertxSender sender() {
+  public Sender sender() {
     return sender;
   }
 
@@ -162,7 +163,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
   private final TraceContext.Extractor<HttpServerRequest> httpServerExtractor;
   private final Tracing tracing;
   private final boolean closeTracer;
-  private final VertxSender sender;
+  private final Sender sender;
   private final HttpServerHandler<HttpServerRequest, HttpServerRequest> httpServerHandler;
   private final HttpClientHandler<HttpRequest, HttpResponse> clientHandler;
   private final TraceContext.Extractor<Map<String, String>> mapExtractor;
@@ -171,7 +172,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
     this(closeTracer, HttpTracing.newBuilder(tracing).build(), sender);
   }
 
-  public ZipkinTracer(boolean closeTracer, HttpTracing httpTracing, VertxSender sender) {
+  public ZipkinTracer(boolean closeTracer, HttpTracing httpTracing, Sender sender) {
     this.closeTracer = closeTracer;
     this.tracing = httpTracing.tracing();
     this.clientHandler = HttpClientHandler.create(httpTracing, HTTP_CLIENT_ADAPTER);

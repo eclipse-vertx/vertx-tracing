@@ -37,7 +37,7 @@ public class ZipkinTracingOptionsTest {
     ZipkinTracingOptions options = new ZipkinTracingOptions().setSenderOptions(senderOptions);
     ZipkinTracerFactory factory = new ZipkinTracerFactory();
     ZipkinTracer tracer = factory.tracer(new TracingOptions(options.toJson()));
-    VertxSender sender = tracer.sender();
+    VertxSender sender = (VertxSender) tracer.sender();
     assertEquals(senderOptions.toJson(), sender.options().toJson());
   }
 

@@ -14,6 +14,7 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.spi.VertxTracerFactory;
 import io.vertx.core.spi.tracing.VertxTracer;
 import io.vertx.core.tracing.TracingOptions;
 
@@ -22,6 +23,11 @@ public class OpenTelemetryOptions extends TracingOptions {
 
   private OpenTelemetry openTelemetry;
 
+  /**
+   * @deprecated instead use {@link io.vertx.core.VertxBuilder#withTracer(VertxTracerFactory)}
+   * and {@link OpenTelemetryTracer#OpenTelemetryTracer(OpenTelemetry)}.
+   */
+  @Deprecated
   public OpenTelemetryOptions(OpenTelemetry openTelemetry) {
     this.openTelemetry = openTelemetry;
     this.setFactory(OpenTelemetryTracingFactory.INSTANCE);

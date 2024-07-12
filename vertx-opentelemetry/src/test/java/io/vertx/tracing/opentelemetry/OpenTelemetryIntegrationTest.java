@@ -64,7 +64,7 @@ public class OpenTelemetryIntegrationTest {
 
   @BeforeEach
   public void setUp() throws Exception {
-    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new OpenTelemetryOptions(otelTesting.getOpenTelemetry())));
+    vertx = Vertx.builder().withTracer(new OpenTelemetryTracingFactory(otelTesting.getOpenTelemetry())).build();
     textMapPropagator = otelTesting.getOpenTelemetry().getPropagators().getTextMapPropagator();
   }
 

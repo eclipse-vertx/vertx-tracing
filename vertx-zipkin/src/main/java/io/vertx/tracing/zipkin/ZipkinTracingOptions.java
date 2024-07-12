@@ -16,6 +16,7 @@ import brave.sampler.Sampler;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.json.annotations.JsonGen;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.spi.VertxTracerFactory;
 import io.vertx.core.tracing.TracingOptions;
 import zipkin2.reporter.AsyncReporter;
 
@@ -34,11 +35,21 @@ public class ZipkinTracingOptions extends TracingOptions {
   private HttpSenderOptions senderOptions = new HttpSenderOptions();
   private HttpTracing httpTracing;
 
+  /**
+   * @deprecated instead use {@link io.vertx.core.VertxBuilder#withTracer(VertxTracerFactory)}
+   * and {@link ZipkinTracerFactory#ZipkinTracerFactory(HttpTracing)}.
+   */
+  @Deprecated
   public ZipkinTracingOptions(HttpTracing httpTracing) {
     this.httpTracing = httpTracing;
     this.setFactory(ZipkinTracerFactory.INSTANCE);
   }
 
+  /**
+   * @deprecated instead use {@link io.vertx.core.VertxBuilder#withTracer(VertxTracerFactory)}
+   * and {@link ZipkinTracerFactory#ZipkinTracerFactory(Tracing)}.
+   */
+  @Deprecated
   public ZipkinTracingOptions(Tracing tracing) {
     this.httpTracing = HttpTracing.newBuilder(tracing).build();
     this.setFactory(ZipkinTracerFactory.INSTANCE);
