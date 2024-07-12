@@ -10,23 +10,56 @@
  */
 package io.vertx.tracing.zipkin;
 
+import brave.Tracing;
+import brave.http.HttpTracing;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.VertxTracerFactory;
 import io.vertx.core.tracing.TracingOptions;
+import zipkin2.reporter.Sender;
 
 public class ZipkinTracerFactory implements VertxTracerFactory {
 
   static final ZipkinTracerFactory INSTANCE = new ZipkinTracerFactory();
 
+  private final HttpTracing httpTracing;
+  private final Sender sender;
+
+  public ZipkinTracerFactory() {
+    this.httpTracing = null;
+    this.sender = null;
+  }
+
+  public ZipkinTracerFactory(Tracing tracing) {
+    this(tracing, null);
+  }
+
+  public ZipkinTracerFactory(Tracing tracing, Sender sender) {
+    this.httpTracing = HttpTracing.newBuilder(tracing).build();
+    this.sender = sender;
+  }
+
+  public ZipkinTracerFactory(HttpTracing httpTracing) {
+    this(httpTracing, null);
+  }
+
+  public ZipkinTracerFactory(HttpTracing httpTracing, Sender sender) {
+    this.httpTracing = httpTracing;
+    this.sender = sender;
+  }
+
   @Override
   public ZipkinTracer tracer(TracingOptions options) {
-    ZipkinTracingOptions zipkinOptions;
-    if (options instanceof ZipkinTracingOptions) {
-      zipkinOptions = (ZipkinTracingOptions) options;
+    if (httpTracing != null) {
+      return new ZipkinTracer(false, httpTracing, sender);
     } else {
-      zipkinOptions = new ZipkinTracingOptions(options.toJson());
+      ZipkinTracingOptions zipkinOptions;
+      if (options instanceof ZipkinTracingOptions) {
+        zipkinOptions = (ZipkinTracingOptions) options;
+      } else {
+        zipkinOptions = new ZipkinTracingOptions(options.toJson());
+      }
+      return zipkinOptions.buildTracer();
     }
-    return zipkinOptions.buildTracer();
   }
 
   @Override

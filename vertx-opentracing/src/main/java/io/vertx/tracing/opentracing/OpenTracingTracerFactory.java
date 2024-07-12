@@ -10,6 +10,7 @@
  */
 package io.vertx.tracing.opentracing;
 
+import io.opentracing.Tracer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.VertxTracerFactory;
 import io.vertx.core.spi.tracing.VertxTracer;
@@ -19,15 +20,29 @@ public class OpenTracingTracerFactory implements VertxTracerFactory {
 
   static final OpenTracingTracerFactory INSTANCE = new OpenTracingTracerFactory();
 
+  private final Tracer tracer;
+
+  public OpenTracingTracerFactory() {
+    this(null);
+  }
+
+  public OpenTracingTracerFactory(Tracer tracer) {
+    this.tracer = tracer;
+  }
+
   @Override
   public VertxTracer tracer(TracingOptions options) {
-    OpenTracingOptions openTracingOptions;
-    if (options instanceof OpenTracingOptions) {
-      openTracingOptions = (OpenTracingOptions) options;
+    if (tracer != null) {
+      return new OpenTracingTracer(false, tracer);
     } else {
-      openTracingOptions = new OpenTracingOptions(options.toJson());
+      OpenTracingOptions openTracingOptions;
+      if (options instanceof OpenTracingOptions) {
+        openTracingOptions = (OpenTracingOptions) options;
+      } else {
+        openTracingOptions = new OpenTracingOptions(options.toJson());
+      }
+      return openTracingOptions.buildTracer();
     }
-    return openTracingOptions.buildTracer();
   }
 
   @Override

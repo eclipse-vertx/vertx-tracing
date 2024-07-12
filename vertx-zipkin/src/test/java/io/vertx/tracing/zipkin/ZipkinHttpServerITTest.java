@@ -35,7 +35,7 @@ public class ZipkinHttpServerITTest extends ITHttpServer implements Handler<Http
 
   @Override
   protected void init() throws Exception {
-    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new ZipkinTracingOptions(httpTracing)));
+    vertx = Vertx.builder().withTracer(new ZipkinTracerFactory(httpTracing)).build();
     server = vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.ALWAYS)).requestHandler(this);
     CompletableFuture<Integer> fut = new CompletableFuture<>();
     server.listen(0, "localhost", ar -> {

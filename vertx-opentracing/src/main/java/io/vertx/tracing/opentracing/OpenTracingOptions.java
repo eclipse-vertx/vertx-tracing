@@ -13,6 +13,7 @@ package io.vertx.tracing.opentracing;
 import io.opentracing.Tracer;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.spi.VertxTracerFactory;
 import io.vertx.core.tracing.TracingOptions;
 
 @DataObject
@@ -24,6 +25,11 @@ public class OpenTracingOptions extends TracingOptions {
     this.setFactory(OpenTracingTracerFactory.INSTANCE);
   }
 
+  /**
+   * @deprecated instead use {@link io.vertx.core.VertxBuilder#withTracer(VertxTracerFactory)}
+   * and {@link OpenTracingTracer#OpenTracingTracer(boolean, Tracer)}.
+   */
+  @Deprecated
   public OpenTracingOptions(Tracer tracer) {
     this.tracer = tracer;
     this.setFactory(OpenTracingTracerFactory.INSTANCE);

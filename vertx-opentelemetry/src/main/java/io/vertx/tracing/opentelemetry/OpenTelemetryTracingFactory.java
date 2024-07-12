@@ -10,6 +10,8 @@
  */
 package io.vertx.tracing.opentelemetry;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.VertxTracerFactory;
 import io.vertx.core.spi.tracing.VertxTracer;
@@ -19,15 +21,29 @@ public class OpenTelemetryTracingFactory implements VertxTracerFactory {
 
   static final OpenTelemetryTracingFactory INSTANCE = new OpenTelemetryTracingFactory();
 
+  private final OpenTelemetry openTelemetry;
+
+  public OpenTelemetryTracingFactory() {
+    this(null);
+  }
+
+  public OpenTelemetryTracingFactory(OpenTelemetry openTelemetry) {
+    this.openTelemetry = openTelemetry;
+  }
+
   @Override
   public VertxTracer<?, ?> tracer(final TracingOptions options) {
-    OpenTelemetryOptions openTelemetryOptions;
-    if (options instanceof OpenTelemetryOptions) {
-      openTelemetryOptions = (OpenTelemetryOptions) options;
+    if (openTelemetry != null) {
+      return new OpenTelemetryTracer(openTelemetry);
     } else {
-      openTelemetryOptions = new OpenTelemetryOptions(options.toJson());
+      OpenTelemetryOptions openTelemetryOptions;
+      if (options instanceof OpenTelemetryOptions) {
+        openTelemetryOptions = (OpenTelemetryOptions) options;
+      } else {
+        openTelemetryOptions = new OpenTelemetryOptions(options.toJson());
+      }
+      return openTelemetryOptions.buildTracer();
     }
-    return openTelemetryOptions.buildTracer();
   }
 
   @Override

@@ -56,7 +56,7 @@ public class ZipkinHttpClientITTest extends ITHttpAsyncClient<HttpClient> {
   @Override
   protected HttpClient newClient(int port) {
     if (vertx == null) {
-      vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new ZipkinTracingOptions(httpTracing)));
+      vertx = Vertx.builder().withTracer(new ZipkinTracerFactory(httpTracing)).build();
     }
     return vertx.createHttpClient(new HttpClientOptions()
       .setDefaultPort(port)

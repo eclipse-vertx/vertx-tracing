@@ -28,7 +28,7 @@ You can override the configuration of the HTTP sender with custom `HttpClientOpt
 {@link examples.ZipkinTracingExamples#ex3}
 ----
 
-Finally you can set a custom ZipKin `Tracing` allowing for greater control
+Finally, you can set a custom ZipKin `Tracing` allowing for greater control
 over the configuration.
 
 [source,$lang]

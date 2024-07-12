@@ -2,6 +2,7 @@ package examples;
 
 import brave.Tracing;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxBuilder;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.http.HttpClient;
@@ -12,6 +13,7 @@ import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.docgen.Source;
 import io.vertx.tracing.zipkin.HttpSenderOptions;
+import io.vertx.tracing.zipkin.ZipkinTracerFactory;
 import io.vertx.tracing.zipkin.ZipkinTracingOptions;
 
 @Source
@@ -47,11 +49,9 @@ public class ZipkinTracingExamples {
   }
 
   public void ex4(Tracing tracing) {
-    Vertx vertx = Vertx.vertx(new VertxOptions()
-      .setTracingOptions(
-        new ZipkinTracingOptions(tracing)
-      )
-    );
+    Vertx vertx = Vertx.builder()
+      .withTracer(new ZipkinTracerFactory(tracing))
+      .build();
   }
 
   public void ex5(Vertx vertx) {

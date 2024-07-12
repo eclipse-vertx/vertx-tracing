@@ -16,6 +16,7 @@ import io.opentracing.propagation.Format;
 import io.opentracing.propagation.TextMapAdapter;
 import io.opentracing.tag.Tags;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxBuilder;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
@@ -47,7 +48,9 @@ public class OpenTracingTest {
   @Before
   public void before() {
     tracer = new MockTracer();
-    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new OpenTracingOptions(tracer)));
+    vertx = Vertx.builder()
+      .withTracer(new OpenTracingTracerFactory(tracer))
+      .build();
   }
 
   @After
