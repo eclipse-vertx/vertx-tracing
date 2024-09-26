@@ -169,62 +169,8 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
   private static <T> Attributes processTags(T obj, TagExtractor<T> tagExtractor, boolean client) {
     AttributesBuilder builder = Attributes.builder();
     int len = tagExtractor.len(obj);
-    boolean receivedDbSystem = false;
     for (int idx = 0; idx < len; idx++) {
-      String name = tagExtractor.name(obj, idx);
-      String value = tagExtractor.value(obj, idx);
-      switch (name) {
-        case "peer.address":
-          builder.put("network.peer.address", value);
-          builder.put(name, value);
-          break;
-        case "peer.port":
-          builder.put("network.peer.port", value);
-          builder.put(name, value);
-          break;
-        case "message_bus.destination":
-          builder.put("messaging.destination.name", value);
-          builder.put(name, value);
-          break;
-        case "message_bus.system":
-          builder.put("messaging.system", value);
-          break;
-        case "message_bus.operation":
-          builder.put("messaging.operation", value);
-          break;
-        case "db.type":
-          if (!receivedDbSystem) {
-            builder.put("db.system", value);
-          }
-          builder.put(name, value);
-          break;
-        case "db.system":
-          receivedDbSystem = true;
-          builder.put(name, value);
-          break;
-        case "http.method":
-          builder.put("http.request.method", value);
-          builder.put(name, value);
-          break;
-        case "http.url":
-          if (client) {
-            builder.put("url.full", value);
-          }
-          builder.put(name, value);
-          break;
-        case "http.status_code":
-          builder.put("http.response.status_code", value);
-          builder.put(name, value);
-          break;
-        case "http.path":
-          builder.put("url.path", value);
-          break;
-        case "http.query":
-          builder.put("url.query", value);
-          break;
-        default:
-          builder.put(name, value);
-      }
+      builder.put(tagExtractor.name(obj, idx), tagExtractor.value(obj, idx));
     }
     return builder.build();
   }
