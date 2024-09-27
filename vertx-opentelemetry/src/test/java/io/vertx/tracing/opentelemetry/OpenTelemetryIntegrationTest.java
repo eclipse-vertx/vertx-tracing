@@ -285,7 +285,7 @@ public class OpenTelemetryIntegrationTest {
     otelTesting.assertTraces().anySatisfy(spanDataList ->
       assertThat(spanDataList)
         .anySatisfy(spanData ->
-          assertThat(spanData.getAttributes().get(AttributeKey.stringKey("message_bus.destination")))
+          assertThat(spanData.getAttributes().get(AttributeKey.stringKey("messaging.destination.name")))
             .isEqualTo("the-address")
         )
     );

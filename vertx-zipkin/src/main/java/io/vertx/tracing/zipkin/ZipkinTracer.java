@@ -294,22 +294,20 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       String name = tagExtractor.name(request, i);
       String value = tagExtractor.value(request, i);
       switch (name) {
-        case "db.statement":
+        case "db.query.text":
           span.tag("sql.query", value);
           break;
-        case "db.instance":
+        case "db.namespace":
+        case "messaging.destination.name":
           span.remoteServiceName(value);
           break;
-        case "peer.address":
+        case "network.peer.address":
           Matcher matcher = P.matcher(value);
           if (matcher.matches()) {
             String host = matcher.group(1);
             int port = Integer.parseInt(matcher.group(2));
             span.remoteIpAndPort(host, port);
           }
-          break;
-        case "message_bus.destination":
-          span.remoteServiceName(value);
           break;
       }
     }

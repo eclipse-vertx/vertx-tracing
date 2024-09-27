@@ -10,8 +10,6 @@
  */
 package io.vertx.tracing.opentracing;
 
-import static io.vertx.tracing.opentracing.OpenTracingUtil.ACTIVE_SPAN;
-
 import io.jaegertracing.Configuration;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
@@ -29,6 +27,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.BiConsumer;
+
+import static io.vertx.tracing.opentracing.OpenTracingUtil.ACTIVE_SPAN;
 
 /**
  * - https://github.com/opentracing/specification/blob/master/semantic_conventions.md
@@ -163,7 +163,57 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
   private <T> void reportTags(Span span, T obj, TagExtractor<T> tagExtractor) {
     int len = tagExtractor.len(obj);
     for (int idx = 0; idx < len; idx++) {
-      span.setTag(tagExtractor.name(obj, idx), tagExtractor.value(obj, idx));
+      String name = tagExtractor.name(obj, idx);
+      String value = tagExtractor.value(obj, idx);
+      switch (name) {
+        case "server.address":
+        case "network.peer.address":
+          span.setTag("peer.address", value);
+          break;
+        case "server.port":
+        case "network.peer.port":
+          span.setTag("peer.port", value);
+          break;
+        case "messaging.destination.name":
+          span.setTag("message_bus.destination", value);
+          break;
+        case "messaging.system":
+          span.setTag("message_bus.system", value);
+          break;
+        case "messaging.operation":
+          span.setTag("message_bus.operation", value);
+          break;
+        case "db.namespace":
+          span.setTag("db.instance", value);
+          break;
+        case "db.query.text":
+        case "db.operation.name":
+          span.setTag("db.statement", value);
+          break;
+        case "db.system":
+          span.setTag("db.type", value);
+          break;
+        case "http.request.method":
+          span.setTag("http.method", value);
+          break;
+        case "http.response.status_code":
+          span.setTag("http.status_code", value);
+          break;
+        case "url.full":
+          span.setTag("http.url", value);
+          break;
+        case "url.scheme":
+          span.setTag("http.scheme", value);
+          break;
+        case "url.path":
+          span.setTag("http.path", value);
+          break;
+        case "url.query":
+          span.setTag("http.query", value);
+          break;
+        default:
+          span.setTag(name, value);
+      }
     }
   }
 
