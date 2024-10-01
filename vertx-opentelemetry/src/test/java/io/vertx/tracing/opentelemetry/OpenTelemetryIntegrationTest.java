@@ -17,7 +17,6 @@ import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -116,7 +115,7 @@ public class OpenTelemetryIntegrationTest {
 
       otelTesting.assertTraces()
         .anySatisfy(spans -> assertThat(spans).anySatisfy(spanData -> {
-          assertThat(spanData.getAttributes().get(SemanticAttributes.HTTP_URL))
+          assertThat(spanData.getAttributes().get(AttributeKey.stringKey("http.url")))
             .startsWith("http://localhost:8080");
         }));
     }
@@ -125,7 +124,7 @@ public class OpenTelemetryIntegrationTest {
         .anySatisfy(spans -> assertThat(spans).anySatisfy(spanData -> {
           assertThat(spanData.getAttributes().get(AttributeKey.stringKey("component")))
             .isEqualTo("vertx");
-          assertThat(spanData.getAttributes().get(SemanticAttributes.HTTP_URL))
+          assertThat(spanData.getAttributes().get(AttributeKey.stringKey("http.url")))
             .startsWith("http://localhost:8080");
         }));
     }
@@ -175,9 +174,9 @@ public class OpenTelemetryIntegrationTest {
 
         assertThat(otelTesting.getSpans())
           .anySatisfy(spanData -> {
-            assertThat(spanData.getAttributes().get(SemanticAttributes.HTTP_METHOD))
+            assertThat(spanData.getAttributes().get(AttributeKey.stringKey("http.method")))
               .isEqualTo("GET");
-            assertThat(spanData.getAttributes().get(SemanticAttributes.HTTP_URL))
+            assertThat(spanData.getAttributes().get(AttributeKey.stringKey("http.url")))
               .startsWith(createTrace ? "http://localhost:8080" : "http://localhost:8081");
           });
       });
@@ -252,8 +251,8 @@ public class OpenTelemetryIntegrationTest {
 
     try {
       span
-        .setAttribute(SemanticAttributes.HTTP_METHOD, "GET")
-        .setAttribute(SemanticAttributes.HTTP_URL, url.toString());
+        .setAttribute(AttributeKey.stringKey("http.method"), "GET")
+        .setAttribute(AttributeKey.stringKey("http.url"), url.toString());
 
       HttpURLConnection con = (HttpURLConnection) url.openConnection();
       textMapPropagator.inject(io.opentelemetry.context.Context.root().with(span), con, setter);
