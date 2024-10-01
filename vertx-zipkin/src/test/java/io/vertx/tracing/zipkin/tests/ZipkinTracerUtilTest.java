@@ -1,4 +1,4 @@
-package io.vertx.tracing.zipkin;
+package io.vertx.tracing.zipkin.tests;
 
 import brave.Span;
 import brave.Tracing;
@@ -9,6 +9,7 @@ import io.vertx.core.Promise;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.tracing.zipkin.ZipkinTracer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 

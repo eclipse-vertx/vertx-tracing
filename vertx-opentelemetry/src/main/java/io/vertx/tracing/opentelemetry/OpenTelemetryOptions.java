@@ -33,7 +33,7 @@ public class OpenTelemetryOptions extends TracingOptions {
     super(json);
   }
 
-  VertxTracer<Operation, Operation> buildTracer() {
+  public VertxTracer<Operation, Operation> buildTracer() {
     if (openTelemetry != null) {
       return new OpenTelemetryTracer(openTelemetry);
     } else {

@@ -9,7 +9,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  */
 
-package io.vertx.tracing.zipkin;
+package io.vertx.tracing.zipkin.tests;
 
 import io.vertx.core.*;
 import io.vertx.core.eventbus.DeliveryOptions;

@@ -26,7 +26,7 @@ public class VertxContextStorageProvider implements ContextStorageProvider {
     return VertxContextStorage.INSTANCE;
   }
 
-  enum VertxContextStorage implements ContextStorage {
+  public enum VertxContextStorage implements ContextStorage {
     INSTANCE;
 
     @Override

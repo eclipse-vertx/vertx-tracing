@@ -16,7 +16,7 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
 
-final class HeadersPropagatorGetter implements TextMapGetter<Iterable<Entry<String, String>>> {
+public final class HeadersPropagatorGetter implements TextMapGetter<Iterable<Entry<String, String>>> {
 
   @Override
   public Iterable<String> keys(final Iterable<Entry<String, String>> carrier) {

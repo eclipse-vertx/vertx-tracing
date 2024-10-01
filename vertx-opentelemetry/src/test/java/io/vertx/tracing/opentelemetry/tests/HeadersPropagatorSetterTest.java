@@ -8,8 +8,9 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  */
-package io.vertx.tracing.opentelemetry;
+package io.vertx.tracing.opentelemetry.tests;
 
+import io.vertx.tracing.opentelemetry.HeadersPropagatorSetter;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;

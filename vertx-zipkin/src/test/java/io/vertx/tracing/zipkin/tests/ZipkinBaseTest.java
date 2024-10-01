@@ -8,7 +8,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  */
-package io.vertx.tracing.zipkin;
+package io.vertx.tracing.zipkin.tests;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -17,6 +17,8 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.tracing.zipkin.HttpSenderOptions;
+import io.vertx.tracing.zipkin.ZipkinTracingOptions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;

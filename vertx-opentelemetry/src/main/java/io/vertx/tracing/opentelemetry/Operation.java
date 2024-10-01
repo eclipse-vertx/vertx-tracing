@@ -16,12 +16,12 @@ import io.opentelemetry.context.Scope;
 
 import java.util.Objects;
 
-final class Operation {
+public final class Operation {
 
   private final Span span;
   private final Scope scope;
 
-  Operation(Span span, Scope scope) {
+  public Operation(Span span, Scope scope) {
     this.span = Objects.requireNonNull(span);
     this.scope = Objects.requireNonNull(scope);
   }

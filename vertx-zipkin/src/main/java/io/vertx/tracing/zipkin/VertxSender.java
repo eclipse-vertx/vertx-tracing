@@ -60,7 +60,7 @@ public class VertxSender extends Sender {
     this.client = vertx.createHttpClient(options);
   }
 
-  HttpSenderOptions options() {
+  public HttpSenderOptions options() {
     return options;
   }
 

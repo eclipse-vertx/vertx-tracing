@@ -9,10 +9,10 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  */
 
-package io.vertx.tracing.zipkin;
+package io.vertx.tracing.zipkin.tests;
 
-import io.vertx.core.spi.VertxTracerFactory;
 import io.vertx.core.tracing.TracingOptions;
+import io.vertx.tracing.zipkin.*;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
