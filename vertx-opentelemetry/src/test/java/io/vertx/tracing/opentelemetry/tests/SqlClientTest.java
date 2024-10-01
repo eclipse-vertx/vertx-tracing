@@ -8,7 +8,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  */
-package io.vertx.tracing.opentelemetry;
+package io.vertx.tracing.opentelemetry.tests;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
@@ -27,6 +27,7 @@ import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Tuple;
+import io.vertx.tracing.opentelemetry.OpenTelemetryOptions;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;

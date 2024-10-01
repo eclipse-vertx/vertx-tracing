@@ -8,7 +8,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  */
-package io.vertx.tracing.opentelemetry;
+package io.vertx.tracing.opentelemetry.tests;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
@@ -23,6 +23,8 @@ import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.spi.tracing.VertxTracer;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.junit5.VertxExtension;
+import io.vertx.tracing.opentelemetry.OpenTelemetryOptions;
+import io.vertx.tracing.opentelemetry.Operation;
 import io.vertx.tracing.opentelemetry.VertxContextStorageProvider.VertxContextStorage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
