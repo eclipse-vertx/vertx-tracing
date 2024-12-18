@@ -22,6 +22,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
@@ -141,7 +142,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
    * @return the current active {@link Span} otherwise {@code null}
    */
   public static Span activeSpan() {
-    Context ctx = Vertx.currentContext();
+    ContextInternal ctx = (ContextInternal) Vertx.currentContext();
     if (ctx != null) {
       return ctx.getLocal(ACTIVE_SPAN);
     }
@@ -152,7 +153,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
    * @return the current active {@link TraceContext} otherwise {@code null}
    */
   public static TraceContext activeContext() {
-    Context ctx = Vertx.currentContext();
+    ContextInternal ctx = (ContextInternal) Vertx.currentContext();
     if (ctx != null) {
       return ctx.getLocal(ACTIVE_CONTEXT);
     }
@@ -216,23 +217,23 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       span.name(operation);
       reportTags(request, tagExtractor, span);
     }
-    context.putLocal(ACTIVE_SPAN, span);
-    context.putLocal(ACTIVE_REQUEST, request);
-    context.putLocal(ACTIVE_CONTEXT, span.context());
+    ((ContextInternal)context).putLocal(ACTIVE_SPAN, span);
+    ((ContextInternal)context).putLocal(ACTIVE_REQUEST, request);
+    ((ContextInternal)context).putLocal(ACTIVE_CONTEXT, span.context());
     return span;
   }
 
   @Override
   public <R> void sendResponse(Context context, R response, Span span, Throwable failure, TagExtractor<R> tagExtractor) {
     if (span != null) {
-      context.removeLocal(ACTIVE_SPAN);
+      ((ContextInternal)context).removeLocal(ACTIVE_SPAN);
       if (response instanceof HttpServerResponse) {
-        HttpServerRequest httpReq = context.getLocal(ACTIVE_REQUEST);
+        HttpServerRequest httpReq = ((ContextInternal)context).getLocal(ACTIVE_REQUEST);
         httpServerHandler.handleSend(httpReq, failure, span);
       } else {
         span.finish();
       }
-      context.removeLocal(ACTIVE_REQUEST);
+      ((ContextInternal)context).removeLocal(ACTIVE_REQUEST);
     }
   }
 
@@ -241,7 +242,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
     if (policy == TracingPolicy.IGNORE) {
       return null;
     }
-    TraceContext activeCtx = context.getLocal(ACTIVE_CONTEXT);
+    TraceContext activeCtx = ((ContextInternal)context).getLocal(ACTIVE_CONTEXT);
     Span span;
     if (activeCtx == null) {
       if (policy != TracingPolicy.ALWAYS) {
@@ -340,7 +341,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
    * Remove any active context.
    */
   public static void clearContext() {
-    Context c = Vertx.currentContext();
+    ContextInternal c = (ContextInternal) Vertx.currentContext();
     if (c != null) {
       c.removeLocal(ACTIVE_CONTEXT);
     }
@@ -350,7 +351,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
    * Remove any active span.
    */
   public static void clearSpan() {
-    Context c = Vertx.currentContext();
+    ContextInternal c = (ContextInternal) Vertx.currentContext();
     if (c != null) {
       c.removeLocal(ACTIVE_SPAN);
     }
@@ -360,7 +361,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
    * Import traceId.
    */
   public static void importTraceId(String traceId) {
-    Context ctx = Vertx.currentContext();
+    ContextInternal ctx = (ContextInternal) Vertx.currentContext();
     if (ctx != null) {
       ctx.putLocal(ACTIVE_CONTEXT, B3SingleFormat.parseB3SingleFormat(traceId).context());
     }
@@ -381,7 +382,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
    * Set active {@link TraceContext}.
    */
   public static void setTraceContext(TraceContext context) {
-    Context ctx = Vertx.currentContext();
+    ContextInternal ctx = (ContextInternal) Vertx.currentContext();
     if (ctx != null) {
       ctx.putLocal(ACTIVE_CONTEXT, context);
     }
@@ -391,7 +392,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
    * Set active {@link Span}.
    */
   public static void setSpan(Span span) {
-    Context ctx = Vertx.currentContext();
+    ContextInternal ctx = (ContextInternal) Vertx.currentContext();
     if (ctx != null) {
       ctx.putLocal(ACTIVE_SPAN, span);
     }

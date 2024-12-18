@@ -19,6 +19,7 @@ import io.opentracing.propagation.Format;
 import io.opentracing.propagation.TextMap;
 import io.opentracing.tag.Tags;
 import io.vertx.core.Context;
+import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.tracing.TracingPolicy;
@@ -86,7 +87,7 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
           .withTag(Tags.COMPONENT.getKey(), "vertx")
           .start();
         reportTags(span, request, tagExtractor);
-        context.putLocal(ACTIVE_SPAN, span);
+        ((ContextInternal)context).putLocal(ACTIVE_SPAN, span);
         return span;
       }
     }
@@ -97,7 +98,7 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
   public <R> void sendResponse(
     Context context, R response, Span span, Throwable failure, TagExtractor<R> tagExtractor) {
     if (span != null) {
-      context.removeLocal(ACTIVE_SPAN);
+      ((ContextInternal)context).removeLocal(ACTIVE_SPAN);
       if (failure != null) {
         reportFailure(span, failure);
       }
@@ -119,7 +120,7 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
     if (policy == TracingPolicy.IGNORE) {
       return null;
     }
-    Span active = context.getLocal(ACTIVE_SPAN);
+    Span active = ((ContextInternal)context).getLocal(ACTIVE_SPAN);
     if (active != null || policy == TracingPolicy.ALWAYS) {
       Span span = tracer
         .buildSpan(operation)

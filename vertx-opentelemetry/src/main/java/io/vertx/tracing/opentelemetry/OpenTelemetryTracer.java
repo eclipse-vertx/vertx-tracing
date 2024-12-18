@@ -21,6 +21,7 @@ import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.vertx.core.Context;
+import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.spi.tracing.VertxTracer;
@@ -77,7 +78,7 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
       .setSpanKind(spanKind);
 
     Span span = reportTagsAndStart(spanBuilder, request, tagExtractor, false);
-    Scope scope = VertxContextStorage.INSTANCE.attach(context, span.storeInContext(otelCtx));
+    Scope scope = VertxContextStorage.INSTANCE.attach((ContextInternal) context, span.storeInContext(otelCtx));
 
     return new Operation(span, scope);
   }

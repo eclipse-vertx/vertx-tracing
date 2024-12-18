@@ -21,6 +21,7 @@ import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.tracing.TracingOptions;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.ext.unit.Async;
@@ -107,9 +108,9 @@ public class OpenTracingTest {
     Async listenLatch = ctx.async();
     vertx.createHttpServer(options).requestHandler(req -> {
       if (expectTrace) {
-        ctx.assertNotNull(Vertx.currentContext().getLocal(OpenTracingUtil.ACTIVE_SPAN));
+        ctx.assertNotNull(((ContextInternal)Vertx.currentContext()).getLocal(OpenTracingUtil.ACTIVE_SPAN));
       } else {
-        ctx.assertNull(Vertx.currentContext().getLocal(OpenTracingUtil.ACTIVE_SPAN));
+        ctx.assertNull(((ContextInternal)Vertx.currentContext()).getLocal(OpenTracingUtil.ACTIVE_SPAN));
       }
       req.response().end();
     }).listen(8080).onComplete(ctx.asyncAssertSuccess(v -> listenLatch.countDown()));

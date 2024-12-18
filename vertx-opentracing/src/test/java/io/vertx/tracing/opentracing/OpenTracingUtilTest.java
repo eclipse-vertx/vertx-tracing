@@ -19,6 +19,7 @@ import io.opentracing.mock.MockTracer;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.internal.ContextInternal;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
@@ -48,7 +49,7 @@ public class OpenTracingUtilTest {
     Span span = tracer.buildSpan("test").start();
     vertx.runOnContext(ignored -> {
       assertNull(OpenTracingUtil.getSpan());
-      Context context = Vertx.currentContext();
+      ContextInternal context = (ContextInternal) Vertx.currentContext();
       context.putLocal(ACTIVE_SPAN, span);
 
       assertSame(span, OpenTracingUtil.getSpan());
@@ -69,7 +70,7 @@ public class OpenTracingUtilTest {
       assertNull(OpenTracingUtil.getSpan());
       OpenTracingUtil.setSpan(span);
 
-      Context context = Vertx.currentContext();
+      ContextInternal context = (ContextInternal) Vertx.currentContext();
       assertSame(span, context.getLocal(ACTIVE_SPAN));
     });
   }

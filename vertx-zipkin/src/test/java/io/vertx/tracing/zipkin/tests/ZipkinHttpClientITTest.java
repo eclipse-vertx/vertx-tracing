@@ -15,6 +15,7 @@ import brave.test.http.ITHttpAsyncClient;
 import io.vertx.core.*;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
+import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.tracing.zipkin.ZipkinTracer;
 import io.vertx.tracing.zipkin.ZipkinTracingOptions;
@@ -110,7 +111,7 @@ public class ZipkinHttpClientITTest extends ITHttpAsyncClient<HttpClient> {
     TraceContext traceCtx = currentTraceContext.get();
     if (traceCtx != null) {
       // Create a context and associate it with the trace context
-      Context ctx = vertx.getOrCreateContext();
+      ContextInternal ctx = (ContextInternal) vertx.getOrCreateContext();
       ctx.putLocal(ZipkinTracer.ACTIVE_CONTEXT, traceCtx);
       ctx.runOnContext(v -> {
         // Run task on this context so the tracer will resolve it from the local storage
