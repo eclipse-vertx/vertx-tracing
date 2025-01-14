@@ -36,6 +36,7 @@
   </scm>
 
   <properties>
+    <junit.jupiter.version>5.9.1</junit.jupiter.version>
     <testcontainers.version>1.17.6</testcontainers.version>
   </properties>
 

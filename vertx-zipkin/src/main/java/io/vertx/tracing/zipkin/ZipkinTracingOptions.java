@@ -17,7 +17,7 @@ import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.json.annotations.JsonGen;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.tracing.TracingOptions;
-import zipkin2.reporter.AsyncReporter;
+import zipkin2.reporter.brave.AsyncZipkinSpanHandler;
 
 import java.util.Objects;
 
@@ -149,7 +149,7 @@ public class ZipkinTracingOptions extends TracingOptions {
         .newBuilder()
         .supportsJoin(supportsJoin)
         .localServiceName(localServiceName)
-        .spanReporter(AsyncReporter.builder(sender).build())
+        .addSpanHandler(AsyncZipkinSpanHandler.create(sender))
         .sampler(sampler)
         .build();
       return new ZipkinTracer(true, tracing, sender);
