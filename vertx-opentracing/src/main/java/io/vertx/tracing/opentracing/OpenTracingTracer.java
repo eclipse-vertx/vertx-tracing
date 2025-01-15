@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2020 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2025 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -29,7 +29,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-import static io.vertx.tracing.opentracing.OpenTracingUtil.ACTIVE_SPAN;
+import static io.vertx.core.spi.context.storage.AccessMode.CONCURRENT;
+import static io.vertx.tracing.opentracing.OpenTracingTracerFactory.ACTIVE_SPAN;
 
 /**
  * - https://github.com/opentracing/specification/blob/master/semantic_conventions.md
@@ -87,7 +88,7 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
           .withTag(Tags.COMPONENT.getKey(), "vertx")
           .start();
         reportTags(span, request, tagExtractor);
-        ((ContextInternal)context).putLocal(ACTIVE_SPAN, span);
+        ((ContextInternal) context).putLocal(ACTIVE_SPAN, CONCURRENT, span);
         return span;
       }
     }
@@ -98,7 +99,7 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
   public <R> void sendResponse(
     Context context, R response, Span span, Throwable failure, TagExtractor<R> tagExtractor) {
     if (span != null) {
-      ((ContextInternal)context).removeLocal(ACTIVE_SPAN);
+      ((ContextInternal) context).removeLocal(ACTIVE_SPAN, CONCURRENT);
       if (failure != null) {
         reportFailure(span, failure);
       }

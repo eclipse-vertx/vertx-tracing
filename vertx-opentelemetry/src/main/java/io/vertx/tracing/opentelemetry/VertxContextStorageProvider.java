@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2023 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2025 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -17,9 +17,10 @@ import io.opentelemetry.context.ContextStorageProvider;
 import io.opentelemetry.context.Scope;
 import io.vertx.core.internal.ContextInternal;
 
-public class VertxContextStorageProvider implements ContextStorageProvider {
+import static io.vertx.core.spi.context.storage.AccessMode.CONCURRENT;
+import static io.vertx.tracing.opentelemetry.OpenTelemetryTracingFactory.ACTIVE_CONTEXT;
 
-  public static final Object ACTIVE_CONTEXT = new Object();
+public class VertxContextStorageProvider implements ContextStorageProvider {
 
   @Override
   public ContextStorage get() {
@@ -45,12 +46,12 @@ public class VertxContextStorageProvider implements ContextStorageProvider {
         return Scope.noop();
       }
 
-      vertxCtx.putLocal(ACTIVE_CONTEXT, toAttach);
+      vertxCtx.putLocal(ACTIVE_CONTEXT, CONCURRENT, toAttach);
 
       if (current == null) {
-        return () -> vertxCtx.removeLocal(ACTIVE_CONTEXT);
+        return () -> vertxCtx.removeLocal(ACTIVE_CONTEXT, CONCURRENT);
       }
-      return () -> vertxCtx.putLocal(ACTIVE_CONTEXT, current);
+      return () -> vertxCtx.putLocal(ACTIVE_CONTEXT, CONCURRENT, current);
     }
 
     @Override

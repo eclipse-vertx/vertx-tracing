@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2020 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2025 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -12,8 +12,10 @@ package io.vertx.tracing.opentracing;
 
 import io.opentracing.Span;
 import io.vertx.core.Context;
-import io.vertx.core.Vertx;
 import io.vertx.core.internal.ContextInternal;
+
+import static io.vertx.core.spi.context.storage.AccessMode.CONCURRENT;
+import static io.vertx.tracing.opentracing.OpenTracingTracerFactory.ACTIVE_SPAN;
 
 /**
  * OpenTracingContext adds helpers for associating and disassociating spans with the current {@link
@@ -21,15 +23,13 @@ import io.vertx.core.internal.ContextInternal;
  */
 public final class OpenTracingUtil {
 
-  static final String ACTIVE_SPAN = "vertx.tracing.opentracing.span";
-
   /**
    * Get the active span from the current {@link Context}
    *
    * @return a {@link Span} or null
    */
   public static Span getSpan() {
-    ContextInternal c = (ContextInternal) Vertx.currentContext();
+    ContextInternal c = ContextInternal.current();
     return c == null ? null : c.getLocal(ACTIVE_SPAN);
   }
 
@@ -40,9 +40,9 @@ public final class OpenTracingUtil {
    */
   public static void setSpan(Span span) {
     if (span != null) {
-      ContextInternal c = (ContextInternal) Vertx.currentContext();
+      ContextInternal c = ContextInternal.current();
       if (c != null) {
-        c.putLocal(ACTIVE_SPAN, span);
+        c.putLocal(ACTIVE_SPAN, CONCURRENT, span);
       }
     }
   }
@@ -51,9 +51,9 @@ public final class OpenTracingUtil {
    * Remove any active span on the context.
    */
   public static void clearContext() {
-    ContextInternal c = (ContextInternal) Vertx.currentContext();
+    ContextInternal c = ContextInternal.current();
     if (c != null) {
-      c.removeLocal(ACTIVE_SPAN);
+      c.removeLocal(ACTIVE_SPAN, CONCURRENT);
     }
   }
 }

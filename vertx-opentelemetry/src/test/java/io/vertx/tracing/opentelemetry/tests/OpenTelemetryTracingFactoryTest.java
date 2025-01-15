@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2023 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2025 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -26,7 +26,6 @@ import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.tracing.opentelemetry.OpenTelemetryOptions;
 import io.vertx.tracing.opentelemetry.Operation;
-import io.vertx.tracing.opentelemetry.VertxContextStorageProvider;
 import io.vertx.tracing.opentelemetry.VertxContextStorageProvider.VertxContextStorage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -244,8 +243,8 @@ public class OpenTelemetryTracingFactoryTest {
   public void sendRequestShouldReturnSpanIfPolicyIsPropagateAndPreviousContextIsPresent(final Vertx vertx) {
     VertxTracer<Operation, Operation> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
 
-    final ContextInternal ctx = (ContextInternal) vertx.getOrCreateContext();
-    ctx.putLocal(VertxContextStorageProvider.ACTIVE_CONTEXT, io.opentelemetry.context.Context.current());
+    final Context ctx = vertx.getOrCreateContext();
+    VertxContextStorage.INSTANCE.attach((ContextInternal) ctx, io.opentelemetry.context.Context.current());
 
     final Operation operation = tracer.sendRequest(
       ctx,

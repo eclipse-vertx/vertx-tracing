@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2020 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2025 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -10,15 +10,9 @@
  */
 package io.vertx.tracing.opentracing;
 
-import static io.vertx.tracing.opentracing.OpenTracingUtil.ACTIVE_SPAN;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-
 import io.opentracing.Span;
 import io.opentracing.mock.MockTracer;
-import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.core.VertxOptions;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -26,6 +20,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import static io.vertx.core.spi.context.storage.AccessMode.CONCURRENT;
+import static io.vertx.tracing.opentracing.OpenTracingTracerFactory.ACTIVE_SPAN;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 
 @RunWith(VertxUnitRunner.class)
 public class OpenTracingUtilTest {
@@ -50,7 +49,7 @@ public class OpenTracingUtilTest {
     vertx.runOnContext(ignored -> {
       assertNull(OpenTracingUtil.getSpan());
       ContextInternal context = (ContextInternal) Vertx.currentContext();
-      context.putLocal(ACTIVE_SPAN, span);
+      context.putLocal(ACTIVE_SPAN, CONCURRENT, span);
 
       assertSame(span, OpenTracingUtil.getSpan());
     });
