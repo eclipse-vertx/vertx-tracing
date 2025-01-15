@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2020 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2025 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -16,13 +16,11 @@ import io.opentracing.propagation.Format;
 import io.opentracing.propagation.TextMapAdapter;
 import io.opentracing.tag.Tags;
 import io.vertx.core.Vertx;
-import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.internal.ContextInternal;
-import io.vertx.core.tracing.TracingOptions;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -38,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
+import static io.vertx.tracing.opentracing.OpenTracingTracerFactory.ACTIVE_SPAN;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(VertxUnitRunner.class)
@@ -108,9 +107,9 @@ public class OpenTracingTest {
     Async listenLatch = ctx.async();
     vertx.createHttpServer(options).requestHandler(req -> {
       if (expectTrace) {
-        ctx.assertNotNull(((ContextInternal)Vertx.currentContext()).getLocal(OpenTracingUtil.ACTIVE_SPAN));
+        ctx.assertNotNull(ContextInternal.current().getLocal(ACTIVE_SPAN));
       } else {
-        ctx.assertNull(((ContextInternal)Vertx.currentContext()).getLocal(OpenTracingUtil.ACTIVE_SPAN));
+        ctx.assertNull(ContextInternal.current().getLocal(ACTIVE_SPAN));
       }
       req.response().end();
     }).listen(8080).onComplete(ctx.asyncAssertSuccess(v -> listenLatch.countDown()));

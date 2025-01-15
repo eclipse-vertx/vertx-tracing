@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2020 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2025 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -10,13 +10,17 @@
  */
 package io.vertx.tracing.opentracing;
 
+import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.VertxTracerFactory;
+import io.vertx.core.spi.context.storage.ContextLocal;
 import io.vertx.core.spi.tracing.VertxTracer;
 import io.vertx.core.tracing.TracingOptions;
 
 public class OpenTracingTracerFactory implements VertxTracerFactory {
+
+  static final ContextLocal<Span> ACTIVE_SPAN = ContextLocal.registerLocal(Span.class);
 
   private final Tracer tracer;
 
