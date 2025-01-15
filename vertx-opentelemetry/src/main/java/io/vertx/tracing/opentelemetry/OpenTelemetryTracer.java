@@ -22,6 +22,7 @@ import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.vertx.core.Context;
 import io.vertx.core.internal.ContextInternal;
+import io.vertx.core.internal.VertxInternal;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.spi.tracing.VertxTracer;
@@ -30,6 +31,8 @@ import io.vertx.tracing.opentelemetry.VertxContextStorageProvider.VertxContextSt
 
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
+
+import static io.vertx.tracing.opentelemetry.VertxContextStorageProvider.ACTIVE_CONTEXT;
 
 class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
 
@@ -58,8 +61,8 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
       return null;
     }
 
-    io.opentelemetry.context.Context otelCtx;
-    if ((otelCtx = VertxContextStorage.INSTANCE.current()) == null) {
+    io.opentelemetry.context.Context otelCtx = ((ContextInternal)context).getLocal(ACTIVE_CONTEXT);
+    if (otelCtx == null) {
       otelCtx = io.opentelemetry.context.Context.root();
     }
 
@@ -125,7 +128,7 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
       return null;
     }
 
-    io.opentelemetry.context.Context otelCtx = VertxContextStorage.INSTANCE.current();
+    io.opentelemetry.context.Context otelCtx = ((ContextInternal)context).getLocal(ACTIVE_CONTEXT);
 
     if (otelCtx == null) {
       if (!TracingPolicy.ALWAYS.equals(policy)) {
