@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2023 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2025 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -22,7 +22,6 @@ import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.vertx.core.Context;
 import io.vertx.core.internal.ContextInternal;
-import io.vertx.core.internal.VertxInternal;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.spi.tracing.VertxTracer;
@@ -32,7 +31,7 @@ import io.vertx.tracing.opentelemetry.VertxContextStorageProvider.VertxContextSt
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 
-import static io.vertx.tracing.opentelemetry.VertxContextStorageProvider.ACTIVE_CONTEXT;
+import static io.vertx.tracing.opentelemetry.OpenTelemetryTracingFactory.ACTIVE_CONTEXT;
 
 class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
 
@@ -61,7 +60,8 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
       return null;
     }
 
-    io.opentelemetry.context.Context otelCtx = ((ContextInternal)context).getLocal(ACTIVE_CONTEXT);
+    ContextInternal ctx = (ContextInternal) context;
+    io.opentelemetry.context.Context otelCtx = ctx.getLocal(ACTIVE_CONTEXT);
     if (otelCtx == null) {
       otelCtx = io.opentelemetry.context.Context.root();
     }
@@ -81,7 +81,7 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
       .setSpanKind(spanKind);
 
     Span span = reportTagsAndStart(spanBuilder, request, tagExtractor, false);
-    Scope scope = VertxContextStorage.INSTANCE.attach((ContextInternal) context, span.storeInContext(otelCtx));
+    Scope scope = VertxContextStorage.INSTANCE.attach(ctx, span.storeInContext(otelCtx));
 
     return new Operation(span, scope);
   }
@@ -128,7 +128,7 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
       return null;
     }
 
-    io.opentelemetry.context.Context otelCtx = ((ContextInternal)context).getLocal(ACTIVE_CONTEXT);
+    io.opentelemetry.context.Context otelCtx = ((ContextInternal) context).getLocal(ACTIVE_CONTEXT);
 
     if (otelCtx == null) {
       if (!TracingPolicy.ALWAYS.equals(policy)) {

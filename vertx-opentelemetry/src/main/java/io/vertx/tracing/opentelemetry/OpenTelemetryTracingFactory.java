@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2023 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2025 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -10,12 +10,16 @@
  */
 package io.vertx.tracing.opentelemetry;
 
+import io.opentelemetry.context.Context;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.VertxTracerFactory;
+import io.vertx.core.spi.context.storage.ContextLocal;
 import io.vertx.core.spi.tracing.VertxTracer;
 import io.vertx.core.tracing.TracingOptions;
 
 public class OpenTelemetryTracingFactory implements VertxTracerFactory {
+
+  static final ContextLocal<Context> ACTIVE_CONTEXT = ContextLocal.registerLocal(Context.class);
 
   @Override
   public VertxTracer<?, ?> tracer(final TracingOptions options) {
