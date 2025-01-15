@@ -18,7 +18,10 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.pgclient.PgBuilder;
 import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.sqlclient.*;
+import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.Tuple;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -47,7 +50,7 @@ public class SqlClientTest extends ZipkinBaseTest {
       .withUsername("postgres")
       .withPassword("postgres");
     server.start();
-    InetAddress ip = Inet4Address.getByName(server.getContainerIpAddress());
+    InetAddress ip = Inet4Address.getByName(server.getHost());
     connectOptions = new PgConnectOptions()
       .setUser("postgres")
       .setPassword("postgres")

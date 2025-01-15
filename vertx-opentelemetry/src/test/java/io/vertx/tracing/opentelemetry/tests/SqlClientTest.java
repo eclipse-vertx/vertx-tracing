@@ -63,7 +63,7 @@ public class SqlClientTest {
       .setUser("postgres")
       .setPassword("postgres")
       .setDatabase("postgres")
-      .setHost(server.getContainerIpAddress())
+      .setHost(server.getHost())
       .setPort(server.getMappedPort(5432));
 
   }

@@ -13,7 +13,6 @@ package io.vertx.tracing.opentracing;
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import io.vertx.core.Vertx;
-import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpMethod;
@@ -58,7 +57,7 @@ public class SqlClientTest {
       .setUser("postgres")
       .setPassword("postgres")
       .setDatabase("postgres")
-      .setHost(server.getContainerIpAddress())
+      .setHost(server.getHost())
       .setPort(server.getMappedPort(5432));
 
   }
