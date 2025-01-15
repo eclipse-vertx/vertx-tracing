@@ -19,7 +19,7 @@ import io.vertx.core.impl.ContextInternal;
 
 public class VertxContextStorageProvider implements ContextStorageProvider {
 
-  private static final Object ACTIVE_CONTEXT = new Object();
+  public static final Object ACTIVE_CONTEXT = new Object();
 
   @Override
   public ContextStorage get() {
