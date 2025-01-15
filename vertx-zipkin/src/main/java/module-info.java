@@ -17,8 +17,8 @@ module io.vertx.tracing.zipkin {
   requires brave;
   requires brave.http;
   requires io.vertx.core;
-  requires zipkin2;
   requires zipkin2.reporter;
+  requires zipkin2.reporter.brave;
 
   provides io.vertx.core.spi.VertxServiceProvider with io.vertx.tracing.zipkin.ZipkinTracerFactory;
 

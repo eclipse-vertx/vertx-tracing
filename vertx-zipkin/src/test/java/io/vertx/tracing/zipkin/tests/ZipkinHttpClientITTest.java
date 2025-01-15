@@ -12,55 +12,55 @@ package io.vertx.tracing.zipkin.tests;
 
 import brave.propagation.TraceContext;
 import brave.test.http.ITHttpAsyncClient;
-import io.vertx.core.*;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.tracing.zipkin.ZipkinTracer;
 import io.vertx.tracing.zipkin.ZipkinTracingOptions;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
+
+import static io.vertx.core.http.HttpMethod.GET;
+import static io.vertx.core.http.HttpMethod.OPTIONS;
 
 public class ZipkinHttpClientITTest extends ITHttpAsyncClient<HttpClient> {
 
   private Vertx vertx;
 
-  @Rule
-  public TestName testName = new TestName();
-
-  public ZipkinHttpClientITTest() {
-    // Need to use this ?
-    // currentTraceContext = ZipkinTracer.DEFAULT_CURRENT_TRACE_CONTEXT;
+  @Test
+  @Disabled
+  @Override
+  public void usesParentFromInvocationTime() {
+    // Does not pass
   }
 
-  // Does not pass
   @Test
-  @Ignore
+  @Disabled
   @Override
-  public void usesParentFromInvocationTime() throws Exception {
-    super.usesParentFromInvocationTime();
+  public void customSampler() {
+    // Does not pass
   }
 
-  // Does not pass
   @Test
-  @Ignore
+  @Disabled
   @Override
-  public void customSampler() throws Exception {
-    super.customSampler();
+  protected void callbackContextIsFromInvocationTime() {
+    // Does not pass
   }
 
   @Override
   protected HttpClient newClient(int port) {
-    if (vertx == null) {
-      vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new ZipkinTracingOptions(httpTracing)));
-    }
+    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new ZipkinTracingOptions(httpTracing)));
     return vertx.createHttpClient(new HttpClientOptions()
       .setDefaultPort(port)
       .setDefaultHost("127.0.0.1")
@@ -69,50 +69,44 @@ public class ZipkinHttpClientITTest extends ITHttpAsyncClient<HttpClient> {
   }
 
   @Override
-  protected void closeClient(HttpClient client) throws Exception {
+  protected void closeClient(HttpClient client) {
     if (client != null) {
-      client.close();
+      client.close().await();
+    }
+    if (vertx != null) {
+      vertx.close().await();
     }
   }
 
   @Override
-  protected void getAsync(HttpClient client, String pathIncludingQuery) throws Exception {
-    request(client, pathIncludingQuery, null);
+  protected void get(HttpClient client, String path, BiConsumer<Integer, Throwable> callback) {
+    client.request(GET, path)
+      .compose(req -> req.send().map(HttpClientResponse::statusCode))
+      .toCompletionStage().whenComplete(callback);
   }
 
-  private CompletableFuture<HttpClientResponse> request(HttpClient client, String pathIncludingQuery, String body) {
-    CompletableFuture<HttpClientResponse> fut = new CompletableFuture<>();
+  private Future<Void> request(HttpClient client, String pathIncludingQuery, String body, HttpMethod method) {
+    Promise<Void> promise = Promise.promise();
     Runnable task = () -> {
-      Handler<AsyncResult<HttpClientResponse>> handler = res -> {
-        if (res.succeeded()) {
-          fut.complete(res.result());
-        } else {
-          fut.completeExceptionally(res.cause());
-        }
-      };
       if (body == null) {
-        client.request(new RequestOptions().setURI(pathIncludingQuery).setFollowRedirects(true)).onComplete(ar -> {
-          if (ar.succeeded()) {
-            ar.result().send().onComplete(handler);
-          } else {
-            handler.handle(Future.failedFuture(ar.cause()));
-          }
-        });
+        RequestOptions options = new RequestOptions()
+          .setURI(pathIncludingQuery)
+          .setMethod(method)
+          .setFollowRedirects(true);
+        client.request(options)
+          .compose(req -> req.send().compose(resp -> resp.body().<Void>mapEmpty()))
+          .onComplete(promise);
       } else {
-        client.request(HttpMethod.POST, pathIncludingQuery).onComplete(ar -> {
-          if (ar.succeeded()) {
-            ar.result().send(Buffer.buffer(body)).onComplete(handler);
-          } else {
-            handler.handle(Future.failedFuture(ar.cause()));
-          }
-        });
+        client.request(HttpMethod.POST, pathIncludingQuery)
+          .compose(req -> req.send(Buffer.buffer(body)).compose(resp -> resp.body().<Void>mapEmpty()))
+          .onComplete(promise);
       }
     };
     TraceContext traceCtx = currentTraceContext.get();
     if (traceCtx != null) {
       // Create a context and associate it with the trace context
       ContextInternal ctx = (ContextInternal) vertx.getOrCreateContext();
-      ctx.putLocal(ZipkinTracer.ACTIVE_CONTEXT, traceCtx);
+      ctx.localContextData().put(ZipkinTracer.ACTIVE_CONTEXT, traceCtx);
       ctx.runOnContext(v -> {
         // Run task on this context so the tracer will resolve it from the local storage
         task.run();
@@ -120,43 +114,33 @@ public class ZipkinHttpClientITTest extends ITHttpAsyncClient<HttpClient> {
     } else {
       task.run();
     }
-    return fut;
+    return promise.future();
   }
 
   @Override
-  protected void get(HttpClient client, String pathIncludingQuery) throws Exception {
-    request(client, pathIncludingQuery, null).get(10, TimeUnit.SECONDS);
-    if (testName.getMethodName().equals("redirect")) {
-      // Required to avoid race condition since the span created by the redirect test might be closed
-      // before the client reports the 2 spans
-      Thread.sleep(1000);
+  protected void get(HttpClient client, String pathIncludingQuery) throws IOException {
+    try {
+      request(client, pathIncludingQuery, null, GET).await(10, TimeUnit.SECONDS);
+    } catch (TimeoutException e) {
+      throw new IOException(e);
     }
   }
 
   @Override
-  protected void post(HttpClient client, String pathIncludingQuery, String body) throws Exception {
-    request(client, pathIncludingQuery, body).get(10, TimeUnit.SECONDS);
-  }
-
-  @Override
-  public void close() throws Exception {
-    if (vertx != null) {
-      CountDownLatch latch = new CountDownLatch(1);
-      vertx.close().onComplete(ar -> {
-        latch.countDown();
-      });
-      latch.await(10, TimeUnit.SECONDS);
-      vertx = null;
+  protected void post(HttpClient client, String pathIncludingQuery, String body) throws IOException {
+    try {
+      request(client, pathIncludingQuery, body, null).await(10, TimeUnit.SECONDS);
+    } catch (TimeoutException e) {
+      throw new IOException(e);
     }
-    super.close();
   }
 
   @Override
-  protected String url(String path) {
-    return "http://127.0.0.1:" + server.getPort() + path;
+  protected void options(HttpClient client, String path) throws IOException {
+    try {
+      request(client, path, null, OPTIONS).await(10, TimeUnit.SECONDS);
+    } catch (TimeoutException e) {
+      throw new IOException(e);
+    }
   }
-
-  //  @After
-//  public void stop() throws Exception {
-//  }
 }

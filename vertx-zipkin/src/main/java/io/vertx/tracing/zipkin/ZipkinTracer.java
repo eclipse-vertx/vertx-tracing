@@ -12,14 +12,16 @@ package io.vertx.tracing.zipkin;
 
 import brave.Span;
 import brave.Tracing;
-import brave.http.*;
+import brave.http.HttpClientHandler;
+import brave.http.HttpClientRequest;
+import brave.http.HttpServerHandler;
+import brave.http.HttpTracing;
 import brave.propagation.B3SingleFormat;
 import brave.propagation.Propagation;
 import brave.propagation.TraceContext;
 import brave.propagation.TraceContextOrSamplingFlags;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.internal.ContextInternal;
@@ -29,8 +31,8 @@ import io.vertx.core.spi.observability.HttpResponse;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.tracing.TracingPolicy;
+import io.vertx.tracing.zipkin.impl.HttpUtils;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -38,8 +40,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * - https://zipkin.io/pages/instrumenting.html
- * - https://zipkin.io/public/thrift/v1/zipkinCore.html
+ * <a href="https://zipkin.io/pages/instrumenting.html">Instrumenting a library</a>.
+ * <p>
+ * <a href="https://zipkin.io/public/thrift/v1/zipkinCore.html">Thrift module: zipkinCore</a>
  */
 public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span, BiConsumer<Object, Throwable>> {
 
@@ -49,42 +52,37 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
   public static final String ACTIVE_CONTEXT = "vertx.tracing.zipkin.active_context";
   public static final String ACTIVE_REQUEST = "vertx.tracing.zipkin.active_request";
 
-  static final HttpServerAdapter<HttpServerRequest, HttpServerRequest> HTTP_SERVER_ADAPTER =
-    new HttpServerAdapter<HttpServerRequest, HttpServerRequest>() {
-      @Override
-      public String method(HttpServerRequest request) {
+  private static class HttpServerRequestAdapter extends brave.http.HttpServerRequest {
+
+    final HttpServerRequest request;
+
+    HttpServerRequestAdapter(HttpServerRequest request) {
+      this.request = request;
+    }
+
+    @Override
+    public String method() {
         return request.method().name();
       }
 
-      @Override
-      public String url(HttpServerRequest request) {
+    @Override
+    public String path() {
+      return request.path();
+    }
+
+    @Override
+    public String url() {
         return request.absoluteURI();
       }
 
-      @Override
-      public String requestHeader(HttpServerRequest request, String name) {
+    @Override
+    public String header(String name) {
         return request.headers().get(name);
       }
 
-      @Override
-      public Integer statusCode(HttpServerRequest request) {
-        return request.response().getStatusCode();
-      }
-
-      @Override
-      public String methodFromResponse(HttpServerRequest request) {
-        return request.method().name();
-      }
-
-      @Override
-      public String route(HttpServerRequest request) {
-        // Not implemented
-        return "";
-      }
-
-      @Override
-      public boolean parseClientIpAndPort(HttpServerRequest request, Span span) {
-        if (parseClientIpFromXForwardedFor(request, span)) {
+    @Override
+    public boolean parseClientIpAndPort(Span span) {
+      if (parseClientIpFromXForwardedFor(span)) {
           return true;
         }
         SocketAddress addr = request.remoteAddress();
@@ -93,46 +91,127 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
         }
         return false;
       }
-    };
 
-  static final HttpClientAdapter<HttpRequest, HttpResponse> HTTP_CLIENT_ADAPTER =
-    new HttpClientAdapter<HttpRequest, HttpResponse>() {
-
-      @Override
-      public String method(HttpRequest request) {
-        HttpMethod method = request.method();
-        return method.name();
-      }
-
-      @Override
-      public String url(HttpRequest request) {
-        return request.absoluteURI();
-      }
-
-      @Override
-      public String requestHeader(HttpRequest request, String name) {
-        return request.headers().get(name);
-      }
-
-      @Override
-      public Integer statusCode(HttpResponse response) {
-        return response.statusCode();
-      }
-    };
-
-  private static final Propagation.Getter<HttpServerRequest, String> HTTP_SERVER_GETTER = new Propagation.Getter<HttpServerRequest, String>() {
     @Override
-    public String get(HttpServerRequest carrier, String key) {
-      return carrier.getHeader(key);
+    public Object unwrap() {
+      return request;
     }
-  };
+  }
 
-  private static final Propagation.Getter<Map<String, String>, String> MAP_GETTER = new Propagation.Getter<Map<String, String>, String>() {
-    @Override
-    public String get(Map<String, String> carrier, String key) {
-      return carrier.get(key);
+  private static class HttpServerResponseAdapter extends brave.http.HttpServerResponse {
+
+    final HttpServerRequest request;
+    final HttpServerResponse response;
+    final Throwable error;
+
+    HttpServerResponseAdapter(HttpServerRequest request, HttpServerResponse response, Throwable error) {
+      this.request = request;
+      this.response = response;
+      this.error = error;
     }
-  };
+
+    @Override
+    public brave.http.HttpServerRequest request() {
+      // Not ideal to wrap on demand but the method is invoked only in tests
+      return new HttpServerRequestAdapter(request);
+    }
+
+    @Override
+    public String method() {
+      return request.method().name();
+    }
+
+    @Override
+    public int statusCode() {
+      return response.getStatusCode();
+    }
+
+    @Override
+    public Throwable error() {
+      return error;
+    }
+
+    @Override
+    public Object unwrap() {
+      return response;
+    }
+  }
+
+  private static class HttpClientRequestAdapter extends brave.http.HttpClientRequest {
+
+    final HttpRequest request;
+    final BiConsumer<String, String> headers;
+
+    HttpClientRequestAdapter(HttpRequest request, BiConsumer<String, String> headers) {
+      this.request = request;
+      this.headers = headers;
+    }
+
+    @Override
+    public String method() {
+      return request.method().name();
+    }
+
+    @Override
+    public String url() {
+      return request.absoluteURI();
+    }
+
+    @Override
+    public String path() {
+      return HttpUtils.parsePath(request.uri());
+    }
+
+    @Override
+    public String header(String name) {
+      return request.headers().get(name);
+    }
+
+    @Override
+    public void header(String name, String value) {
+      headers.accept(name, value);
+    }
+
+    @Override
+    public Object unwrap() {
+      return request;
+    }
+  }
+
+  private static class HttpClientResponseAdapter extends brave.http.HttpClientResponse {
+
+    final HttpClientRequest request;
+    final HttpResponse response;
+    final Throwable err;
+
+    public HttpClientResponseAdapter(HttpClientRequest request, HttpResponse response, Throwable err) {
+      this.request = request;
+      this.response = response;
+      this.err = err;
+    }
+
+    @Override
+    public HttpClientRequest request() {
+      return request;
+    }
+
+    @Override
+    public int statusCode() {
+      return response.statusCode();
+    }
+
+    @Override
+    public Throwable error() {
+      return err;
+    }
+
+    @Override
+    public Object unwrap() {
+      return response;
+    }
+  }
+
+  private static final Propagation.Getter<Map<String, String>, String> MAP_GETTER = Map::get;
 
   public VertxSender sender() {
     return sender;
@@ -160,12 +239,11 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
     return null;
   }
 
-  private final TraceContext.Extractor<HttpServerRequest> httpServerExtractor;
   private final Tracing tracing;
   private final boolean closeTracer;
   private final VertxSender sender;
-  private final HttpServerHandler<HttpServerRequest, HttpServerRequest> httpServerHandler;
-  private final HttpClientHandler<HttpRequest, HttpResponse> clientHandler;
+  private final HttpServerHandler<brave.http.HttpServerRequest, brave.http.HttpServerResponse> httpServerHandler;
+  private final HttpClientHandler<HttpClientRequest, brave.http.HttpClientResponse> clientHandler;
   private final TraceContext.Extractor<Map<String, String>> mapExtractor;
 
   public ZipkinTracer(boolean closeTracer, Tracing tracing, VertxSender sender) {
@@ -175,9 +253,8 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
   public ZipkinTracer(boolean closeTracer, HttpTracing httpTracing, VertxSender sender) {
     this.closeTracer = closeTracer;
     this.tracing = httpTracing.tracing();
-    this.clientHandler = HttpClientHandler.create(httpTracing, HTTP_CLIENT_ADAPTER);
-    this.httpServerHandler = HttpServerHandler.create(httpTracing, HTTP_SERVER_ADAPTER);
-    this.httpServerExtractor = httpTracing.tracing().propagation().extractor(HTTP_SERVER_GETTER);
+    this.clientHandler = HttpClientHandler.create(httpTracing);
+    this.httpServerHandler = HttpServerHandler.create(httpTracing);
     this.mapExtractor = tracing.propagation().extractor(MAP_GETTER);
     this.sender = sender;
   }
@@ -198,7 +275,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       if (traceId == null && policy == TracingPolicy.PROPAGATE) {
         return null;
       }
-      span = httpServerHandler.handleReceive(httpServerExtractor, httpReq);
+      span = httpServerHandler.handleReceive(new HttpServerRequestAdapter(httpReq));
     } else {
       Map<String, String> headerMap = new HashMap<>();
       for (Map.Entry<String, String> header : headers) {
@@ -228,8 +305,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
     if (span != null) {
       ((ContextInternal)context).removeLocal(ACTIVE_SPAN);
       if (response instanceof HttpServerResponse) {
-        HttpServerRequest httpReq = ((ContextInternal)context).getLocal(ACTIVE_REQUEST);
-        httpServerHandler.handleSend(httpReq, failure, span);
+        httpServerHandler.handleSend(new HttpServerResponseAdapter(((ContextInternal) context).getLocal(ACTIVE_REQUEST), (HttpServerResponse) response, failure), span);
       } else {
         span.finish();
       }
@@ -259,20 +335,10 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       if (socketAddress != null && socketAddress.hostAddress() != null) {
         span.remoteIpAndPort(socketAddress.hostAddress(), socketAddress.port());
       }
-      Propagation.Setter<HttpRequest, String> setter = new Propagation.Setter<HttpRequest, String>() {
-        @Override
-        public void put(HttpRequest carrier, String key, String value) {
-          headers.accept(key, value);
-        }
-        @Override
-        public String toString() {
-          return "HttpClientRequest::putHeader";
-        }
-      };
-      TraceContext.Injector<HttpRequest> injector = tracing.propagation().injector(setter);
-      clientHandler.handleSend(injector, httpRequest, span);
+      HttpClientRequestAdapter clientRequestAdapter = new HttpClientRequestAdapter(httpRequest, headers);
+      clientHandler.handleSend(clientRequestAdapter, span);
       return (resp, err) -> {
-        clientHandler.handleReceive((HttpResponse) resp, err, span);
+        clientHandler.handleReceive(new HttpClientResponseAdapter(clientRequestAdapter, (HttpResponse) resp, err), span);
       };
     } else {
       span.kind(kind == SpanKind.RPC ? Span.Kind.CLIENT : Span.Kind.PRODUCER);
@@ -329,11 +395,7 @@ public class ZipkinTracer implements io.vertx.core.spi.tracing.VertxTracer<Span,
       tracing.close();
     }
     if (sender != null) {
-      try {
-        sender.close();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+      sender.close();
     }
   }
 

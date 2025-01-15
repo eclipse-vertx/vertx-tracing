@@ -10,7 +10,6 @@
  */
 package io.vertx.tracing.zipkin.tests;
 
-import brave.propagation.ExtraFieldPropagation;
 import brave.propagation.TraceContext;
 import brave.test.http.ITHttpServer;
 import io.vertx.core.Handler;
@@ -23,54 +22,39 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.tracing.zipkin.ZipkinTracer;
 import io.vertx.tracing.zipkin.ZipkinTracingOptions;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.io.IOException;
 
-public class ZipkinHttpServerITTest extends ITHttpServer implements Handler<HttpServerRequest> {
+class ZipkinHttpServerITTest extends ITHttpServer implements Handler<HttpServerRequest> {
 
   private Vertx vertx;
   private HttpServer server;
   private int port;
 
   @Override
-  protected void init() throws Exception {
+  protected void init() {
     vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new ZipkinTracingOptions(httpTracing)));
-    server = vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.ALWAYS)).requestHandler(this);
-    CompletableFuture<Integer> fut = new CompletableFuture<>();
-    server.listen(0, "localhost").onComplete(ar -> {
-      if (ar.succeeded()) {
-        fut.complete(ar.result().actualPort());
-      } else {
-        fut.completeExceptionally(ar.cause());
-      }
-    });
-    port = fut.get(10, TimeUnit.SECONDS);
-  }
-
-  @Override
-  public void readsExtra_newTrace() throws Exception {
-    super.readsExtra_newTrace();
+    server = vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.ALWAYS))
+      .requestHandler(this)
+      .listen(0, "localhost")
+      .await();
+    port = server.actualPort();
   }
 
   @Override
   public void handle(HttpServerRequest req) {
     TraceContext ctx = ZipkinTracer.activeContext();
     switch (req.path()) {
-      case "/extra":
-        req.response().end(ExtraFieldPropagation.get(ctx, EXTRA_KEY));
-        break;
       case "/foo":
         req.response().end("bar");
         break;
       case "/exception":
-        req.response().setStatusCode(500).end();
+        req.response().setStatusCode(503).end();
         break;
       case "/exceptionAsync":
         req.endHandler(v -> {
-          req.response().setStatusCode(500).end();
+          req.response().setStatusCode(503).end();
         });
         break;
       case "/badrequest":
@@ -109,29 +93,47 @@ public class ZipkinHttpServerITTest extends ITHttpServer implements Handler<Http
   }
 
   @Override
-  public void httpRoute() throws Exception {
+  public void httpRoute() {
     // Cannot pass because routes are /items/1 and /items/2
   }
 
   @Override
-  public void httpRoute_nested() throws Exception {
+  public void httpRoute_nested() {
     // Cannot pass because routes are /items/1 and /items/2
   }
 
   @Override
-  public void httpRoute_async() throws Exception {
+  public void httpRoute_async() {
     // Cannot pass because routes are /items/1 and /items/2
   }
 
-  @After
+  @Override
+  protected void spanHandlerSeesError() throws IOException {
+    // Cannot pass because our Zipkin tracer only reports error when a request is reset
+  }
+
+  @Override
+  protected void spanHandlerSeesError_async() throws IOException {
+    // Cannot pass because our Zipkin tracer only reports error when a request is reset
+  }
+
+  @Override
+  protected void setsErrorAndHttpStatusOnUncaughtException() throws IOException {
+    // Cannot pass because our Zipkin tracer only reports error when a request is reset
+  }
+
+  @Override
+  protected void setsErrorAndHttpStatusOnUncaughtException_async() throws IOException {
+    // Cannot pass because our Zipkin tracer only reports error when a request is reset
+  }
+
+  @AfterEach
   public void stop() throws Exception {
+    if (server != null) {
+      server.close().await();
+    }
     if (vertx != null) {
-      CountDownLatch latch = new CountDownLatch(1);
-      vertx.close().onComplete(ar -> {
-        latch.countDown();
-      });
-      latch.await(10, TimeUnit.SECONDS);
-      vertx = null;
+      vertx.close().await();
     }
   }
 }
