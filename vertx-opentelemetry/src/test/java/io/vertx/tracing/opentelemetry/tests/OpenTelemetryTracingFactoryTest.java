@@ -18,6 +18,7 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
+import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.spi.tracing.VertxTracer;
@@ -25,6 +26,7 @@ import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.tracing.opentelemetry.OpenTelemetryOptions;
 import io.vertx.tracing.opentelemetry.Operation;
+import io.vertx.tracing.opentelemetry.VertxContextStorageProvider;
 import io.vertx.tracing.opentelemetry.VertxContextStorageProvider.VertxContextStorage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -242,8 +244,8 @@ public class OpenTelemetryTracingFactoryTest {
   public void sendRequestShouldReturnSpanIfPolicyIsPropagateAndPreviousContextIsPresent(final Vertx vertx) {
     VertxTracer<Operation, Operation> tracer = new OpenTelemetryOptions(OpenTelemetry.noop()).buildTracer();
 
-    final Context ctx = vertx.getOrCreateContext();
-    VertxContextStorage.INSTANCE.attach(io.opentelemetry.context.Context.current());
+    final ContextInternal ctx = (ContextInternal) vertx.getOrCreateContext();
+    ctx.putLocal(VertxContextStorageProvider.ACTIVE_CONTEXT, io.opentelemetry.context.Context.current());
 
     final Operation operation = tracer.sendRequest(
       ctx,
