@@ -74,10 +74,11 @@ public class OpenTelemetryIntegrationTest {
   }
 
   private static Stream<Arguments> testTracingPolicyArgs() {
-    return Stream.of(TracingPolicy.PROPAGATE)
-      .flatMap(policy -> Stream.of(
-        Arguments.of(policy, true)
-      ));
+    return Stream.of(
+      Arguments.of(TracingPolicy.PROPAGATE, true),
+      Arguments.of(TracingPolicy.PROPAGATE, false),
+      Arguments.of(TracingPolicy.ALWAYS, true)
+    );
   }
 
   @ParameterizedTest
