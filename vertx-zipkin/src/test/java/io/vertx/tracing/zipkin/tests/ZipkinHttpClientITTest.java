@@ -18,7 +18,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
-import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.tracing.zipkin.ZipkinTracer;
 import io.vertx.tracing.zipkin.ZipkinTracingOptions;
@@ -104,11 +103,8 @@ public class ZipkinHttpClientITTest extends ITHttpAsyncClient<HttpClient> {
     };
     TraceContext traceCtx = currentTraceContext.get();
     if (traceCtx != null) {
-      // Create a context and associate it with the trace context
-      ContextInternal ctx = (ContextInternal) vertx.getOrCreateContext();
-      ctx.localContextData().put(ZipkinTracer.ACTIVE_CONTEXT, traceCtx);
-      ctx.runOnContext(v -> {
-        // Run task on this context so the tracer will resolve it from the local storage
+      vertx.runOnContext(v -> {
+        ZipkinTracer.setTraceContext(traceCtx);
         task.run();
       });
     } else {

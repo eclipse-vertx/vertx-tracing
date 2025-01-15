@@ -10,13 +10,19 @@
  */
 package io.vertx.tracing.zipkin;
 
+import brave.Span;
+import brave.propagation.TraceContext;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.VertxTracerFactory;
+import io.vertx.core.spi.context.storage.ContextLocal;
 import io.vertx.core.tracing.TracingOptions;
 
 public class ZipkinTracerFactory implements VertxTracerFactory {
 
-  static final ZipkinTracerFactory INSTANCE = new ZipkinTracerFactory();
+  static final ContextLocal<Span> ACTIVE_SPAN = ContextLocal.registerLocal(Span.class);
+  static final ContextLocal<TraceContext> ACTIVE_CONTEXT = ContextLocal.registerLocal(TraceContext.class);
+  static final ContextLocal<HttpServerRequest> ACTIVE_REQUEST = ContextLocal.registerLocal(HttpServerRequest.class);
 
   @Override
   public ZipkinTracer tracer(TracingOptions options) {
