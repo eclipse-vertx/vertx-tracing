@@ -58,7 +58,7 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
     }
 
     io.opentelemetry.context.Context otelCtx;
-    if ((otelCtx = VertxContextStorage.INSTANCE.current()) == null) {
+    if ((otelCtx = context.getLocal(VertxContextStorageProvider.ACTIVE_CONTEXT)) == null) {
       otelCtx = io.opentelemetry.context.Context.root();
     }
 
@@ -124,7 +124,7 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
       return null;
     }
 
-    io.opentelemetry.context.Context otelCtx = VertxContextStorage.INSTANCE.current();
+    io.opentelemetry.context.Context otelCtx = context.getLocal(VertxContextStorageProvider.ACTIVE_CONTEXT);
 
     if (otelCtx == null) {
       if (!TracingPolicy.ALWAYS.equals(policy)) {

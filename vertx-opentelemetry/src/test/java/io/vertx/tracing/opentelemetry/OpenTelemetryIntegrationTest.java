@@ -18,10 +18,7 @@ import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.core.VertxOptions;
+import io.vertx.core.*;
 import io.vertx.core.http.*;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.junit5.Checkpoint;
@@ -75,32 +72,39 @@ public class OpenTelemetryIntegrationTest {
 
   private static Stream<Arguments> testTracingPolicyArgs() {
     return Stream.of(
-      Arguments.of(TracingPolicy.PROPAGATE, true),
-      Arguments.of(TracingPolicy.PROPAGATE, false),
-      Arguments.of(TracingPolicy.ALWAYS, true)
+      Arguments.of(TracingPolicy.PROPAGATE, true, ThreadingModel.EVENT_LOOP),
+      Arguments.of(TracingPolicy.PROPAGATE, false, ThreadingModel.EVENT_LOOP),
+      Arguments.of(TracingPolicy.ALWAYS, true, ThreadingModel.EVENT_LOOP),
+      Arguments.of(TracingPolicy.PROPAGATE, true, ThreadingModel.WORKER)
     );
   }
 
   @ParameterizedTest
   @MethodSource("testTracingPolicyArgs")
-  public void testHttpServerRequestWithPolicy(TracingPolicy policy, boolean createTrace, VertxTestContext ctx) throws Exception {
+  public void testHttpServerRequestWithPolicy(TracingPolicy policy, boolean createTrace, ThreadingModel threadingModel, VertxTestContext ctx) throws Exception {
     CountDownLatch latch = new CountDownLatch(1);
     final boolean expectTrace = (policy == TracingPolicy.PROPAGATE && createTrace) || policy == TracingPolicy.ALWAYS;
 
-    ctx.assertComplete(
-      vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(policy)).requestHandler(req -> {
-        ctx.verify(() -> {
-          if (expectTrace) {
-            assertThat(Span.current())
-              .isNotEqualTo(Span.getInvalid());
-          } else {
-            assertThat(Span.current())
-              .isEqualTo(Span.getInvalid());
-          }
-        });
-        req.response().end();
-      }).listen(8080).onSuccess(v -> latch.countDown())
-    );
+    vertx.deployVerticle(new AbstractVerticle() {
+        @Override
+        public void start(Promise<Void> startPromise) throws Exception {
+          vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(policy)).requestHandler(req -> {
+            ctx.verify(() -> {
+              if (expectTrace) {
+                assertThat(Span.current())
+                  .isNotEqualTo(Span.getInvalid());
+              } else {
+                assertThat(Span.current())
+                  .isEqualTo(Span.getInvalid());
+              }
+            });
+            req.response().end();
+          }).listen(8080)
+            .<Void>mapEmpty()
+            .onComplete(startPromise);
+        }
+      }, new DeploymentOptions().setThreadingModel(threadingModel))
+      .onSuccess(v -> latch.countDown());
 
     Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS));
 
@@ -135,22 +139,31 @@ public class OpenTelemetryIntegrationTest {
 
   @ParameterizedTest
   @MethodSource("testTracingPolicyArgs")
-  public void testHttpClientRequestWithPolicy(TracingPolicy policy, boolean createTrace, VertxTestContext ctx) throws Exception {
+  public void testHttpClientRequestWithPolicy(TracingPolicy policy, boolean createTrace, ThreadingModel threadingModel, VertxTestContext ctx) throws Exception {
     int expectedTrace = (createTrace ? 1 : 0) +
       (policy == TracingPolicy.PROPAGATE && createTrace ? 2 : 0) +
       (policy == TracingPolicy.ALWAYS ? 2 : 0);
 
     CountDownLatch latch = new CountDownLatch(2);
-    HttpClient c = vertx.createHttpClient(new HttpClientOptions().setTracingPolicy(policy));
 
     // Proxy server
-    vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.PROPAGATE)).requestHandler(req ->
-      c.request(HttpMethod.GET, 8081, "localhost", "/", ctx.succeeding(clientReq ->
-        clientReq.send(ctx.succeeding(clientResp ->
-          req.response().end()
-        ))
-      ))
-    ).listen(8080, ctx.succeeding(v -> latch.countDown()));
+    vertx.deployVerticle(new AbstractVerticle() {
+      @Override
+      public void start(Promise<Void> startPromise) throws Exception {
+        HttpClient c = vertx.createHttpClient(new HttpClientOptions().setTracingPolicy(policy));
+        vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.PROPAGATE)).requestHandler(req ->
+          c.request(HttpMethod.GET, 8081, "localhost", "/", ctx.succeeding(clientReq ->
+            clientReq.send(ctx.succeeding(clientResp ->
+              req.response().end()
+            ))
+          ))
+        )
+          .listen(8080)
+          .<Void>mapEmpty()
+          .onComplete(startPromise);
+      }
+    }, new DeploymentOptions().setThreadingModel(threadingModel))
+      .onComplete(ctx.succeeding(v -> latch.countDown()));
 
     // End server
     vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.PROPAGATE))
