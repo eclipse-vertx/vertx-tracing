@@ -20,7 +20,7 @@ import io.vertx.core.tracing.TracingOptions;
 
 public class OpenTracingTracerFactory implements VertxTracerFactory {
 
-  static final ContextLocal<Span> ACTIVE_SPAN = ContextLocal.registerLocal(Span.class);
+  public static final ContextLocal<Span> ACTIVE_SPAN = ContextLocal.registerLocal(Span.class);
 
   private final Tracer tracer;
 
