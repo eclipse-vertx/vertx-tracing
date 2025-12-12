@@ -19,7 +19,7 @@ module io.vertx.tracing.opentelemetry {
   requires io.opentelemetry.sdk;
   requires io.opentelemetry.sdk.trace;
   requires io.vertx.core;
-
+  exports io.vertx.tracing.opentelemetry;
   provides io.opentelemetry.context.ContextStorageProvider with io.vertx.tracing.opentelemetry.VertxContextStorageProvider;
   provides io.vertx.core.spi.VertxServiceProvider with io.vertx.tracing.opentelemetry.OpenTelemetryTracingFactory;
 
