@@ -10,6 +10,8 @@
  */
 package io.vertx.tracing.opentelemetry;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.VertxTracerFactory;
@@ -21,24 +23,32 @@ public class OpenTelemetryTracingFactory implements VertxTracerFactory {
 
   static final ContextLocal<Context> ACTIVE_CONTEXT = ContextLocal.registerLocal(Context.class);
 
-  @Override
-  public VertxTracer<?, ?> tracer(final TracingOptions options) {
-    OpenTelemetryOptions openTelemetryOptions;
-    if (options instanceof OpenTelemetryOptions) {
-      openTelemetryOptions = (OpenTelemetryOptions) options;
-    } else {
-      openTelemetryOptions = new OpenTelemetryOptions(options.toJson());
-    }
-    return openTelemetryOptions.buildTracer();
+  private final OpenTelemetry openTelemetry;
+
+  public OpenTelemetryTracingFactory() {
+    this(null);
+  }
+
+  public OpenTelemetryTracingFactory(OpenTelemetry openTelemetry) {
+    this.openTelemetry = openTelemetry;
   }
 
   @Override
-  public TracingOptions newOptions() {
+  public VertxTracer<?, ?> tracer(final TracingOptions options) {
+    if (openTelemetry != null) {
+      return new OpenTelemetryTracer(openTelemetry);
+    } else {
+      return new OpenTelemetryTracer(GlobalOpenTelemetry.get());
+    }
+  }
+
+  @Override
+  public OpenTelemetryOptions newOptions() {
     return new OpenTelemetryOptions();
   }
 
   @Override
-  public TracingOptions newOptions(JsonObject jsonObject) {
+  public OpenTelemetryOptions newOptions(JsonObject jsonObject) {
     return new OpenTelemetryOptions(jsonObject);
   }
 }
