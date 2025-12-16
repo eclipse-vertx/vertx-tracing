@@ -15,12 +15,11 @@ import brave.test.http.ITHttpAsyncClient;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.tracing.zipkin.ZipkinTracer;
-import io.vertx.tracing.zipkin.ZipkinTracingOptions;
+import io.vertx.tracing.zipkin.ZipkinTracerFactory;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -59,7 +58,7 @@ public class ZipkinHttpClientITTest extends ITHttpAsyncClient<HttpClient> {
 
   @Override
   protected HttpClient newClient(int port) {
-    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new ZipkinTracingOptions(httpTracing)));
+    vertx = Vertx.builder().withTracer(new ZipkinTracerFactory(httpTracing)).build();
     return vertx.createHttpClient(new HttpClientOptions()
       .setDefaultPort(port)
       .setDefaultHost("127.0.0.1")
