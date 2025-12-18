@@ -17,14 +17,17 @@ import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.vertx.core.*;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
+import io.vertx.core.ThreadingModel;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import io.vertx.tracing.opentelemetry.OpenTelemetryOptions;
+import io.vertx.tracing.opentelemetry.OpenTelemetryTracingFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,7 +65,10 @@ public class OpenTelemetryIntegrationTest {
 
   @BeforeEach
   public void setUp() throws Exception {
-    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new OpenTelemetryOptions(otelTesting.getOpenTelemetry())));
+    vertx = Vertx
+      .builder()
+      .withTracer(new OpenTelemetryTracingFactory(otelTesting.getOpenTelemetry()))
+      .build();
     textMapPropagator = otelTesting.getOpenTelemetry().getPropagators().getTextMapPropagator();
   }
 

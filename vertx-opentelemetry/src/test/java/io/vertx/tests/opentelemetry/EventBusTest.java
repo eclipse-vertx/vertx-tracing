@@ -14,13 +14,16 @@ package io.vertx.tests.opentelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.vertx.core.*;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.http.*;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import io.vertx.tracing.opentelemetry.OpenTelemetryOptions;
+import io.vertx.tracing.opentelemetry.OpenTelemetryTracingFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +47,10 @@ public class EventBusTest {
 
   @BeforeEach
   public void setUp() throws Exception {
-    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new OpenTelemetryOptions(otelTesting.getOpenTelemetry())));
+    vertx = Vertx
+      .builder()
+      .withTracer(new OpenTelemetryTracingFactory(otelTesting.getOpenTelemetry()))
+      .build();
     client = vertx.createHttpClient(new HttpClientOptions().setDefaultPort(8080));
   }
 

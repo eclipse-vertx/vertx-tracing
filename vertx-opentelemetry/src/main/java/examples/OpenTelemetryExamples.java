@@ -4,7 +4,7 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
-import io.opentelemetry.sdk.trace.*;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.eventbus.DeliveryOptions;
@@ -15,6 +15,7 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.docgen.Source;
 import io.vertx.tracing.opentelemetry.OpenTelemetryOptions;
+import io.vertx.tracing.opentelemetry.OpenTelemetryTracingFactory;
 
 @Source
 public class OpenTelemetryExamples {
@@ -28,11 +29,10 @@ public class OpenTelemetryExamples {
   }
 
   public void ex2(OpenTelemetry openTelemetry) {
-    Vertx vertx = Vertx.vertx(new VertxOptions()
-      .setTracingOptions(
-        new OpenTelemetryOptions(openTelemetry)
-      )
-    );
+    Vertx vertx = Vertx
+      .builder()
+      .withTracer(new OpenTelemetryTracingFactory(openTelemetry))
+      .build();
   }
 
   public void ex3(Vertx vertx) {
@@ -61,13 +61,16 @@ public class OpenTelemetryExamples {
     vertx.eventBus().send("the-address", "foo", options);
   }
 
-  public void ex7(VertxOptions vertxOptions) {
+  public void ex7() {
     SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder().build();
     OpenTelemetry openTelemetry = OpenTelemetrySdk.builder()
       .setTracerProvider(sdkTracerProvider)
       .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
       .buildAndRegisterGlobal();
 
-    vertxOptions.setTracingOptions(new OpenTelemetryOptions(openTelemetry));
+    Vertx vertx = Vertx
+      .builder()
+      .withTracer(new OpenTelemetryTracingFactory(openTelemetry))
+      .build();
   }
 }
