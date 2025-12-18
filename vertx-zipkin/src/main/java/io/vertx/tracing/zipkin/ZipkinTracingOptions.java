@@ -10,14 +10,10 @@
  */
 package io.vertx.tracing.zipkin;
 
-import brave.Tracing;
-import brave.http.HttpTracing;
-import brave.sampler.Sampler;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.json.annotations.JsonGen;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.tracing.TracingOptions;
-import zipkin2.reporter.brave.AsyncZipkinSpanHandler;
 
 import java.util.Objects;
 
@@ -29,28 +25,16 @@ public class ZipkinTracingOptions extends TracingOptions {
   public static final boolean DEFAULT_SUPPORTS_JOIN = true;
 
   private String serviceName = DEFAULT_SERVICE_NAME;
-  private Sampler sampler = Sampler.ALWAYS_SAMPLE;
   private boolean supportsJoin = DEFAULT_SUPPORTS_JOIN;
   private HttpSenderOptions senderOptions = new HttpSenderOptions();
-  private HttpTracing httpTracing;
-
-  public ZipkinTracingOptions(HttpTracing httpTracing) {
-    this.httpTracing = httpTracing;
-  }
-
-  public ZipkinTracingOptions(Tracing tracing) {
-    this.httpTracing = HttpTracing.newBuilder(tracing).build();
-  }
 
   public ZipkinTracingOptions() {
   }
 
   public ZipkinTracingOptions(ZipkinTracingOptions other) {
     this.serviceName = other.serviceName;
-    this.sampler = other.sampler;
     this.supportsJoin = other.supportsJoin;
     this.senderOptions = other.senderOptions == null ? null : new HttpSenderOptions(other.senderOptions);
-    this.httpTracing = other.httpTracing == null ? null : other.httpTracing.toBuilder().build();
   }
 
   public ZipkinTracingOptions(JsonObject json) {
@@ -116,46 +100,6 @@ public class ZipkinTracingOptions extends TracingOptions {
   public ZipkinTracingOptions setSenderOptions(HttpSenderOptions senderOptions) {
     this.senderOptions = senderOptions;
     return this;
-  }
-
-  /**
-   * @return the Zipkin Sampler
-   */
-  public Sampler getSampler() {
-    return sampler;
-  }
-
-  /**
-   * Set the Zipkin Sampler.
-   *
-   * @param sampler the options
-   * @return this instance
-   */
-  public ZipkinTracingOptions setSampler(Sampler sampler) {
-    this.sampler = sampler;
-    return this;
-  }
-
-  /**
-   * Build the tracer and return it.
-   */
-  public ZipkinTracer buildTracer() {
-    if (httpTracing != null) {
-      return new ZipkinTracer(false, httpTracing, null);
-    } else if (senderOptions != null) {
-      String localServiceName = serviceName;
-      VertxSender sender = new VertxSender(senderOptions);
-      Tracing tracing = Tracing
-        .newBuilder()
-        .supportsJoin(supportsJoin)
-        .localServiceName(localServiceName)
-        .addSpanHandler(AsyncZipkinSpanHandler.create(sender))
-        .sampler(sampler)
-        .build();
-      return new ZipkinTracer(true, tracing, sender);
-    } else {
-      return null;
-    }
   }
 
   public JsonObject toJson() {

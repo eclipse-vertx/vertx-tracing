@@ -20,6 +20,8 @@ module io.vertx.tracing.zipkin {
   requires zipkin2.reporter;
   requires zipkin2.reporter.brave;
 
+  exports io.vertx.tracing.zipkin;
+
   provides io.vertx.core.spi.VertxServiceProvider with io.vertx.tracing.zipkin.ZipkinTracerFactory;
 
 }
