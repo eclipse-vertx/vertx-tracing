@@ -10,35 +10,25 @@
  */
 package io.vertx.tracing.opentelemetry;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.OpenTelemetry;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.spi.tracing.VertxTracer;
 import io.vertx.core.tracing.TracingOptions;
 
 @DataObject
 public class OpenTelemetryOptions extends TracingOptions {
 
-  private OpenTelemetry openTelemetry;
-
-  public OpenTelemetryOptions(OpenTelemetry openTelemetry) {
-    this.openTelemetry = openTelemetry;
+  public OpenTelemetryOptions() {
   }
 
-  public OpenTelemetryOptions() {
+  public OpenTelemetryOptions(OpenTelemetryOptions other) {
   }
 
   public OpenTelemetryOptions(JsonObject json) {
     super(json);
   }
 
-  public VertxTracer<Operation, Operation> buildTracer() {
-    if (openTelemetry != null) {
-      return new OpenTelemetryTracer(openTelemetry);
-    } else {
-      return new OpenTelemetryTracer(GlobalOpenTelemetry.get());
-    }
+  @Override
+  public OpenTelemetryOptions copy() {
+    return new OpenTelemetryOptions(this);
   }
-
 }

@@ -14,14 +14,13 @@ import brave.propagation.TraceContext;
 import brave.test.http.ITHttpServer;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.tracing.zipkin.ZipkinTracer;
-import io.vertx.tracing.zipkin.ZipkinTracingOptions;
+import io.vertx.tracing.zipkin.ZipkinTracerFactory;
 import org.junit.jupiter.api.AfterEach;
 
 import java.io.IOException;
@@ -34,7 +33,7 @@ class ZipkinHttpServerITTest extends ITHttpServer implements Handler<HttpServerR
 
   @Override
   protected void init() {
-    vertx = Vertx.vertx(new VertxOptions().setTracingOptions(new ZipkinTracingOptions(httpTracing)));
+    vertx = Vertx.builder().withTracer(new ZipkinTracerFactory(httpTracing)).build();
     server = vertx.createHttpServer(new HttpServerOptions().setTracingPolicy(TracingPolicy.ALWAYS))
       .requestHandler(this)
       .listen(0, "localhost")
