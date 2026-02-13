@@ -37,7 +37,7 @@
 
   <properties>
     <junit.jupiter.version>5.9.1</junit.jupiter.version>
-    <testcontainers.version>1.17.6</testcontainers.version>
+    <testcontainers.version>2.0.3</testcontainers.version>
     <vertx.surefire.useModulePath>false</vertx.surefire.useModulePath>
   </properties>
 
@@ -86,7 +86,7 @@
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>postgresql</artifactId>
+      <artifactId>testcontainers-postgresql</artifactId>
       <version>${testcontainers.version}</version>
       <scope>test</scope>
     </dependency>
