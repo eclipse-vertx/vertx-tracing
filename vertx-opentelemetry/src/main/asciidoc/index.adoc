@@ -80,3 +80,16 @@ The default sending policy is `PROPAGATE`, you can configure the policy with {@l
 ----
 {@link examples.OpenTelemetryExamples#ex6}
 ----
+
+== Span names
+
+By default, spans are named after the operation reported by Vert.x, e.g. the HTTP method for HTTP spans.
+
+A {@link io.vertx.tracing.opentelemetry.SpanNameProvider} can compute a more meaningful name from the traced request, keeping cardinality under control.
+
+[source,$lang]
+----
+{@link examples.OpenTelemetryExamples#ex9}
+----
+
+The provider is invoked on the thread creating the span, often an event-loop thread: it must not block.

@@ -40,10 +40,16 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
 
   private final Tracer tracer;
   private final ContextPropagators propagators;
+  private final SpanNameProvider spanNameProvider;
 
   OpenTelemetryTracer(final OpenTelemetry openTelemetry) {
+    this(openTelemetry, null);
+  }
+
+  OpenTelemetryTracer(final OpenTelemetry openTelemetry, final SpanNameProvider spanNameProvider) {
     this.tracer = openTelemetry.getTracer("io.vertx");
     this.propagators = openTelemetry.getPropagators();
+    this.spanNameProvider = spanNameProvider;
   }
 
   @Override
@@ -76,7 +82,7 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
     io.opentelemetry.api.trace.SpanKind spanKind = SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.SERVER : io.opentelemetry.api.trace.SpanKind.CONSUMER;
 
     SpanBuilder spanBuilder = tracer
-      .spanBuilder(operation)
+      .spanBuilder(spanName(operation, request))
       .setParent(otelCtx)
       .setSpanKind(spanKind);
 
@@ -139,7 +145,7 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
 
     io.opentelemetry.api.trace.SpanKind spanKind = SpanKind.RPC.equals(kind) ? io.opentelemetry.api.trace.SpanKind.CLIENT : io.opentelemetry.api.trace.SpanKind.PRODUCER;
 
-    SpanBuilder spanBuilder = tracer.spanBuilder(operation)
+    SpanBuilder spanBuilder = tracer.spanBuilder(spanName(operation, request))
       .setParent(otelCtx)
       .setSpanKind(spanKind);
 
@@ -161,6 +167,16 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
     if (operation != null) {
       end(operation, response, tagExtractor, failure, true);
     }
+  }
+
+  private String spanName(String operation, Object request) {
+    if (spanNameProvider != null) {
+      String name = spanNameProvider.spanName(operation, request);
+      if (name != null) {
+        return name;
+      }
+    }
+    return operation;
   }
 
   // tags need to be set before start, otherwise any sampler registered won't have access to it
