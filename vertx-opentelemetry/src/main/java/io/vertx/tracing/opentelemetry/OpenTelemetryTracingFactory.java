@@ -24,6 +24,7 @@ public class OpenTelemetryTracingFactory implements VertxTracerFactory {
   static final ContextLocal<Context> ACTIVE_CONTEXT = ContextLocal.registerLocal(Context.class);
 
   private final OpenTelemetry openTelemetry;
+  private SpanCustomizer spanCustomizer;
 
   public OpenTelemetryTracingFactory() {
     this(null);
@@ -33,12 +34,23 @@ public class OpenTelemetryTracingFactory implements VertxTracerFactory {
     this.openTelemetry = openTelemetry;
   }
 
+  /**
+   * Set a customizer invoked before the tracer starts a span, e.g. to add custom attributes visible to the sampler.
+   *
+   * @param spanCustomizer the customizer, or {@code null} for none
+   * @return a reference to this, so the API can be used fluently
+   */
+  public OpenTelemetryTracingFactory withSpanCustomizer(SpanCustomizer spanCustomizer) {
+    this.spanCustomizer = spanCustomizer;
+    return this;
+  }
+
   @Override
   public VertxTracer<?, ?> tracer(final TracingOptions options) {
     if (openTelemetry != null) {
-      return new OpenTelemetryTracer(openTelemetry);
+      return new OpenTelemetryTracer(openTelemetry, spanCustomizer);
     } else {
-      return new OpenTelemetryTracer(GlobalOpenTelemetry.get());
+      return new OpenTelemetryTracer(GlobalOpenTelemetry.get(), spanCustomizer);
     }
   }
 

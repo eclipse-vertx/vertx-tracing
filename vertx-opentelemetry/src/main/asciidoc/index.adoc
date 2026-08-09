@@ -80,3 +80,16 @@ The default sending policy is `PROPAGATE`, you can configure the policy with {@l
 ----
 {@link examples.OpenTelemetryExamples#ex6}
 ----
+
+== Customizing spans
+
+Custom attributes can be added to a span before it is started with a {@link io.vertx.tracing.opentelemetry.SpanCustomizer}.
+
+Since these attributes are set before the span is started, they are visible to the OpenTelemetry `Sampler` and can be used for head sampling decisions.
+
+[source,$lang]
+----
+{@link examples.OpenTelemetryExamples#ex8}
+----
+
+The customizer is invoked on the thread creating the span, often an event-loop thread: it must not block.
