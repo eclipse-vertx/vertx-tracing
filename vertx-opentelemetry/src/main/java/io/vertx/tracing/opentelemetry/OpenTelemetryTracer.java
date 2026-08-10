@@ -82,6 +82,11 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
 
     Span span = reportTagsAndStart(spanBuilder, request, tagExtractor, false);
     Scope scope = VertxContextStorage.INSTANCE.attach(ctx, span.storeInContext(otelCtx));
+    if (ctx.isDuplicate()) {
+      // the duplicated context is scoped to this request or message: keep the tracing context attached
+      // so that spans created by tasks scheduled from the handler remain in the trace after the span ends
+      scope = Scope.noop();
+    }
 
     return new Operation(span, scope);
   }
