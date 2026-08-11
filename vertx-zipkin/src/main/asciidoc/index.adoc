@@ -28,6 +28,15 @@ You can override the configuration of the HTTP sender with custom `HttpClientOpt
 {@link examples.ZipkinTracingExamples#ex3}
 ----
 
+Spans can be reported with another transport than HTTP, e.g. Kafka or ActiveMQ: set a span handler
+created with any Zipkin `BytesMessageSender`. The corresponding sender library must be added
+to the classpath, and the handler must be closed when it is not needed anymore.
+
+[source,$lang]
+----
+{@link examples.ZipkinTracingExamples#ex8}
+----
+
 Finally, you can set a custom ZipKin `Tracing` allowing for greater control
 over the configuration.
 
