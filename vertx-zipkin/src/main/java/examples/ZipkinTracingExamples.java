@@ -14,6 +14,8 @@ import io.vertx.docgen.Source;
 import io.vertx.tracing.zipkin.HttpSenderOptions;
 import io.vertx.tracing.zipkin.ZipkinTracerFactory;
 import io.vertx.tracing.zipkin.ZipkinTracingOptions;
+import zipkin2.reporter.BytesMessageSender;
+import zipkin2.reporter.brave.AsyncZipkinSpanHandler;
 
 @Source
 public class ZipkinTracingExamples {
@@ -45,6 +47,14 @@ public class ZipkinTracingExamples {
             .setKeyCertOptions(sslOptions))
       )
     );
+  }
+
+  public void ex8(BytesMessageSender sender) {
+    Vertx vertx = Vertx
+      .builder()
+      .withTracer(new ZipkinTracerFactory()
+        .withSpanHandler(AsyncZipkinSpanHandler.create(sender)))
+      .build();
   }
 
   public void ex4(Tracing tracing) {

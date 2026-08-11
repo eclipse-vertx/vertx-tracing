@@ -12,6 +12,7 @@ package io.vertx.tracing.zipkin;
 
 import brave.Span;
 import brave.Tracing;
+import brave.handler.SpanHandler;
 import brave.http.HttpTracing;
 import brave.propagation.TraceContext;
 import brave.sampler.Sampler;
@@ -30,6 +31,7 @@ public class ZipkinTracerFactory implements VertxTracerFactory {
 
   private final Sampler sampler;
   private final HttpTracing httpTracing;
+  private SpanHandler spanHandler;
 
   public ZipkinTracerFactory() {
     this(null, null);
@@ -57,6 +59,20 @@ public class ZipkinTracerFactory implements VertxTracerFactory {
     }
   }
 
+  /**
+   * Set a handler reporting the finished spans instead of sending them to Zipkin over HTTP, e.g. a
+   * {@link AsyncZipkinSpanHandler} created with any {@code BytesMessageSender} such as a Kafka or ActiveMQ sender.
+   * <p>
+   * The handler is not closed when Vert.x closes: the caller remains responsible for its lifecycle.
+   *
+   * @param spanHandler the handler, or {@code null} to send spans to Zipkin over HTTP
+   * @return a reference to this, so the API can be used fluently
+   */
+  public ZipkinTracerFactory withSpanHandler(SpanHandler spanHandler) {
+    this.spanHandler = spanHandler;
+    return this;
+  }
+
   @Override
   public ZipkinTracer tracer(TracingOptions options) {
     if (httpTracing != null) {
@@ -68,17 +84,21 @@ public class ZipkinTracerFactory implements VertxTracerFactory {
     } else {
       zipkinOptions = new ZipkinTracingOptions(options.toJson());
     }
+    assert sampler != null : "sampler shouldn't be null when httpTracing is null";
+    String localServiceName = zipkinOptions.getServiceName();
+    Tracing.Builder builder = Tracing
+      .newBuilder()
+      .supportsJoin(zipkinOptions.isSupportsJoin())
+      .localServiceName(localServiceName)
+      .sampler(sampler);
+    if (spanHandler != null) {
+      return new ZipkinTracer(true, builder.addSpanHandler(spanHandler).build(), null);
+    }
     HttpSenderOptions senderOptions = zipkinOptions.getSenderOptions();
     if (senderOptions != null) {
-      String localServiceName = zipkinOptions.getServiceName();
       VertxSender sender = new VertxSender(senderOptions);
-      assert sampler != null : "sampler shouldn't be null when httpTracing is null";
-      Tracing tracing = Tracing
-        .newBuilder()
-        .supportsJoin(zipkinOptions.isSupportsJoin())
-        .localServiceName(localServiceName)
+      Tracing tracing = builder
         .addSpanHandler(AsyncZipkinSpanHandler.create(sender))
-        .sampler(sampler)
         .build();
       return new ZipkinTracer(true, tracing, sender);
     } else {
