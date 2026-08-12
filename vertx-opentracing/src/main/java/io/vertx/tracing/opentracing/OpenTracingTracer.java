@@ -99,7 +99,12 @@ public class OpenTracingTracer implements io.vertx.core.spi.tracing.VertxTracer<
   public <R> void sendResponse(
     Context context, R response, Span span, Throwable failure, TagExtractor<R> tagExtractor) {
     if (span != null) {
-      ((ContextInternal) context).removeLocal(ACTIVE_SPAN, CONCURRENT);
+      ContextInternal ctx = (ContextInternal) context;
+      if (!ctx.isDuplicate()) {
+        // the duplicated context is scoped to this request or message: keep the span attached
+        // so that spans created by tasks scheduled from the handler remain in the trace after it finishes
+        ctx.removeLocal(ACTIVE_SPAN, CONCURRENT);
+      }
       if (failure != null) {
         reportFailure(span, failure);
       }
