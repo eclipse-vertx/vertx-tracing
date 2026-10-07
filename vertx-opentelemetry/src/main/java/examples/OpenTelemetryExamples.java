@@ -12,6 +12,7 @@ import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.docgen.Source;
 import io.vertx.tracing.opentelemetry.OpenTelemetryOptions;
@@ -59,6 +60,19 @@ public class OpenTelemetryExamples {
   public void ex6(Vertx vertx) {
     DeliveryOptions options = new DeliveryOptions().setTracingPolicy(TracingPolicy.ALWAYS);
     vertx.eventBus().send("the-address", "foo", options);
+  }
+
+  public void ex9(OpenTelemetry openTelemetry) {
+    Vertx vertx = Vertx
+      .builder()
+      .withTracer(new OpenTelemetryTracingFactory(openTelemetry)
+        .withSpanNameProvider((operation, request) -> {
+          if (request instanceof HttpRequest) {
+            return operation + " " + ((HttpRequest) request).uri();
+          }
+          return operation;
+        }))
+      .build();
   }
 
   public void ex7() {

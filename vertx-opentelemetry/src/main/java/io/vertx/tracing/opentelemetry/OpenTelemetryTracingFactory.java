@@ -24,6 +24,7 @@ public class OpenTelemetryTracingFactory implements VertxTracerFactory {
   static final ContextLocal<Context> ACTIVE_CONTEXT = ContextLocal.registerLocal(Context.class);
 
   private final OpenTelemetry openTelemetry;
+  private SpanNameProvider spanNameProvider;
 
   public OpenTelemetryTracingFactory() {
     this(null);
@@ -33,12 +34,23 @@ public class OpenTelemetryTracingFactory implements VertxTracerFactory {
     this.openTelemetry = openTelemetry;
   }
 
+  /**
+   * Set a provider computing the name of the spans created by the tracer.
+   *
+   * @param spanNameProvider the provider, or {@code null} to use the operation name reported by Vert.x
+   * @return a reference to this, so the API can be used fluently
+   */
+  public OpenTelemetryTracingFactory withSpanNameProvider(SpanNameProvider spanNameProvider) {
+    this.spanNameProvider = spanNameProvider;
+    return this;
+  }
+
   @Override
   public VertxTracer<?, ?> tracer(final TracingOptions options) {
     if (openTelemetry != null) {
-      return new OpenTelemetryTracer(openTelemetry);
+      return new OpenTelemetryTracer(openTelemetry, spanNameProvider);
     } else {
-      return new OpenTelemetryTracer(GlobalOpenTelemetry.get());
+      return new OpenTelemetryTracer(GlobalOpenTelemetry.get(), spanNameProvider);
     }
   }
 
