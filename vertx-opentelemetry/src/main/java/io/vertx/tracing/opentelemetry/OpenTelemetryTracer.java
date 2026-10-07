@@ -40,10 +40,16 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
 
   private final Tracer tracer;
   private final ContextPropagators propagators;
+  private final SpanCustomizer spanCustomizer;
 
   OpenTelemetryTracer(final OpenTelemetry openTelemetry) {
+    this(openTelemetry, null);
+  }
+
+  OpenTelemetryTracer(final OpenTelemetry openTelemetry, final SpanCustomizer spanCustomizer) {
     this.tracer = openTelemetry.getTracer("io.vertx");
     this.propagators = openTelemetry.getPropagators();
+    this.spanCustomizer = spanCustomizer;
   }
 
   @Override
@@ -167,6 +173,9 @@ class OpenTelemetryTracer implements VertxTracer<Operation, Operation> {
   private <T> Span reportTagsAndStart(SpanBuilder span, T obj, TagExtractor<T> tagExtractor, boolean client) {
     Attributes attributes = processTags(obj, tagExtractor, client);
     span.setAllAttributes(attributes);
+    if (spanCustomizer != null) {
+      spanCustomizer.customize(span, obj);
+    }
     return span.startSpan();
   }
 
